@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import asyncio
 import decimal
 import importlib
@@ -8,7 +10,7 @@ import sys
 from values import values
 
 if len(sys.argv) < 4:
-    print("usage: aoc.py <year> <day> <part> [puzzle input filename]")
+    print("usage: python aoc.py <year> <day> <part> [puzzle input filename]")
     sys.exit(0)
 
 

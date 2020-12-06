@@ -40,7 +40,7 @@ async def run():
 
 #### Running solutions
 ```
-usage: aoc.py <year> <day> <part> [puzzle input filename]
+$ python aoc.py <year> <day> <part> [puzzle input filename]
 ```
 
 If no puzzle input filename is specified, the default `input` file for the puzzle's day will be used as the puzzle input.
@@ -48,6 +48,7 @@ If no puzzle input filename is specified, the default `input` file for the puzzl
 Example – to run the solution from the example above (year 2020, day 2, part 2).
 ```bash
 $ python aoc.py 2020 3 2
+
 # [values.year]            (number)  2020
 # [values.day]             (number)  3
 # [values.part]            (number)  2
