@@ -45,7 +45,7 @@ $ python aoc.py <year> <day> <part> [puzzle input filename]
 
 If no puzzle input filename is specified, the default `input` file for the puzzle's day will be used as the puzzle input.
 
-Example – to run the solution from the example above (year 2020, day 2, part 2).
+Example – to run the solution from the example above (year 2020, day 3, part 2).
 ```bash
 $ python aoc.py 2020 3 2
 
