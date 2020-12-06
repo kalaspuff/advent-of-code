@@ -7,7 +7,6 @@ import sys
 
 from values import values
 
-
 if len(sys.argv) < 4:
     print("usage: aoc.py <year> <day> <part> [puzzle input filename]")
     sys.exit(0)
