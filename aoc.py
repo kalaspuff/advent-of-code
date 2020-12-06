@@ -38,6 +38,7 @@ elif input_filename.startswith("/"):
     input_filename_fullpath = input_filename
     input_filename = input_filename_fullpath.rsplit("/", 1)[1]
 else:
+    input_filename = input_filename.replace(f"year{year}/day{day}/", "")
     input_filename_fullpath = f"{day_path}/{input_filename}"
 
 input_ = ""
