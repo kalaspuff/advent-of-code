@@ -14,7 +14,9 @@ def binary_space_partitioning_upper_half(a: int, b: int) -> Tuple[int, int]:
 
 
 @functools.lru_cache(maxsize=128)
-def binary_space_partitioning(value: Sequence, a: int, b: int, lower_modifier_char: Any, upper_modifier_char: Any) -> int:
+def binary_space_partitioning(
+    value: Sequence, a: int, b: int, lower_modifier_char: Any, upper_modifier_char: Any
+) -> int:
     for char in value:
         if char == lower_modifier_char:
             a, b = binary_space_partitioning_lower_half(a, b)
@@ -64,19 +66,24 @@ def tuple_sub(value: Tuple[int, ...], mod: Tuple[int, ...]) -> Tuple[int, ...]:
     return tuple_sum(value, tuple_negative(mod))
 
 
-def split_to_dict(values: Union[str, List[str]], split: Optional[Union[str, List[str], Tuple[str, ...]]] = None, delimit: Optional[Union[str, List[str], Tuple[str, ...]]] = None, strip: bool = True) -> Dict[str, str]:
+def split_to_dict(
+    values: Union[str, List[str]],
+    split: Optional[Union[str, List[str], Tuple[str, ...]]] = None,
+    delimit: Optional[Union[str, List[str], Tuple[str, ...]]] = None,
+    strip: bool = True,
+) -> Dict[str, str]:
     if isinstance(values, str):
         values = [values]
 
     if split is None:
         split = (",", " ", "\n")
     if isinstance(split, str):
-        split = (split, )
+        split = (split,)
 
     if delimit is None:
         delimit = (":", "=")
     if isinstance(delimit, str):
-        delimit = (delimit, )
+        delimit = (delimit,)
 
     merged_rows = []
     for row in values:
@@ -94,7 +101,7 @@ def split_to_dict(values: Union[str, List[str]], split: Optional[Union[str, List
     for row in merged_rows:
         for s in delimit:
             if s in row:
-                result = {**result, **dict((cast(Tuple[str, str], tuple(row.split(s, 1))), ))}
+                result = {**result, **dict((cast(Tuple[str, str], tuple(row.split(s, 1))),))}
                 break
 
     return result

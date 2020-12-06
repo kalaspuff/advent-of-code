@@ -88,14 +88,14 @@ class Matrix:
             if len(self.rows[value]) > 1:
                 return Matrix([self.rows[value]], fill=self._fill)
             return self.rows[value][0]
-        return Matrix(self.rows[min(value, to_value):(max(value, to_value) + 1)], fill=self._fill)
+        return Matrix(self.rows[min(value, to_value) : (max(value, to_value) + 1)], fill=self._fill)
 
     def x(self, value, to_value=None):
         if to_value is None:
             if len(self.rows) > 1:
                 return Matrix([row[value] for row in self.rows], fill=self._fill)
             return self.rows[0][value]
-        return Matrix([row[min(value, to_value):(max(value, to_value) + 1)] for row in self.rows], fill=self._fill)
+        return Matrix([row[min(value, to_value) : (max(value, to_value) + 1)] for row in self.rows], fill=self._fill)
 
     def yx(self, y_value, x_value):
         return self.get(x_value, y_value)
@@ -218,9 +218,22 @@ class Matrix:
             args = (x, y)
         if isinstance(args, dict) and "x" in args and "y" in args:
             args = (args.get("x"), args.get("y"))
-        if len(args) == 1 and isinstance(args[0], (tuple, list)) and len(args[0]) == 2 and isinstance(args[0][0], int) and isinstance(args[0][1], int):
-            args, = args
-        elif len(args) == 1 and isinstance(args[0], (tuple, list)) and isinstance(args[0][0], (tuple, list)) and len(args[0][0]) == 2 and isinstance(args[0][0][0], int) and isinstance(args[0][0][1], int):
+        if (
+            len(args) == 1
+            and isinstance(args[0], (tuple, list))
+            and len(args[0]) == 2
+            and isinstance(args[0][0], int)
+            and isinstance(args[0][1], int)
+        ):
+            (args,) = args
+        elif (
+            len(args) == 1
+            and isinstance(args[0], (tuple, list))
+            and isinstance(args[0][0], (tuple, list))
+            and len(args[0][0]) == 2
+            and isinstance(args[0][0][0], int)
+            and isinstance(args[0][0][1], int)
+        ):
             return [self.get(p) for p in args[0]]
 
         x_, y_ = args
@@ -240,23 +253,57 @@ class Matrix:
             args = (x, y)
         if isinstance(args, dict) and "x" in args and "y" in args:
             args = (args.get("x"), args.get("y"))
-        if len(args) == 1 and isinstance(args[0], (tuple, list)) and len(args[0]) == 2 and isinstance(args[0][0], int) and isinstance(args[0][1], int):
-            args, = args
+        if (
+            len(args) == 1
+            and isinstance(args[0], (tuple, list))
+            and len(args[0]) == 2
+            and isinstance(args[0][0], int)
+            and isinstance(args[0][1], int)
+        ):
+            (args,) = args
 
         x_: int = 0
         y_: int = 0
-        if value is VALUE_SENTINEL and isinstance(args, (tuple, list)) and len(args) == 2 and isinstance(args[0], dict) and "x" in args[0] and "y" in args[0]:
+        if (
+            value is VALUE_SENTINEL
+            and isinstance(args, (tuple, list))
+            and len(args) == 2
+            and isinstance(args[0], dict)
+            and "x" in args[0]
+            and "y" in args[0]
+        ):
             args, value = args
             args = (args.get("x"), args.get("y"))
             x_, y_ = args
-        elif value is VALUE_SENTINEL and isinstance(args, (tuple, list)) and len(args) == 3 and isinstance(args[0], int) and isinstance(args[1], int):
+        elif (
+            value is VALUE_SENTINEL
+            and isinstance(args, (tuple, list))
+            and len(args) == 3
+            and isinstance(args[0], int)
+            and isinstance(args[1], int)
+        ):
             x_, y_, value = args
             args = x_, y_
-        elif value is VALUE_SENTINEL and isinstance(args, (tuple, list)) and len(args) == 1 and isinstance(args[0], (tuple, list)) and len(args[0]) == 3 and isinstance(args[0][0], int) and isinstance(args[0][1], int):
-            args, = args
+        elif (
+            value is VALUE_SENTINEL
+            and isinstance(args, (tuple, list))
+            and len(args) == 1
+            and isinstance(args[0], (tuple, list))
+            and len(args[0]) == 3
+            and isinstance(args[0][0], int)
+            and isinstance(args[0][1], int)
+        ):
+            (args,) = args
             x_, y_, value = args
             args = x_, y_
-        elif value is VALUE_SENTINEL and len(args) == 2 and isinstance(args[0], (tuple, list)) and len(args[0]) == 2 and isinstance(args[0][0], int) and isinstance(args[0][1], int):
+        elif (
+            value is VALUE_SENTINEL
+            and len(args) == 2
+            and isinstance(args[0], (tuple, list))
+            and len(args[0]) == 2
+            and isinstance(args[0][0], int)
+            and isinstance(args[0][1], int)
+        ):
             args, value = args
             x_, y_ = args
         elif value is VALUE_SENTINEL:
@@ -272,7 +319,7 @@ class Matrix:
         try:
             self.coordinates[x_, y_] = value
             if isinstance(self.rows[y_], str):
-                self.rows[y_] = self.rows[y_][0:x_] + value + self.rows[y_][(x_ + 1):]
+                self.rows[y_] = self.rows[y_][0:x_] + value + self.rows[y_][(x_ + 1) :]
             else:
                 self.rows[y_][x_] = value
         except KeyError:

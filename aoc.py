@@ -14,7 +14,9 @@ if len(sys.argv) < 4:
 
 year = int(sys.argv[1].replace("year-", "").replace("year_", "").replace("year", "").replace("y", ""))
 day = int(sys.argv[2].replace("day-", "").replace("day_", "").replace("day", "").replace("d", ""))
-part = int(sys.argv[3].replace("part-", "").replace("part_", "").replace("part", "").replace(".py", "").replace("p", ""))
+part = int(
+    sys.argv[3].replace("part-", "").replace("part_", "").replace("part", "").replace(".py", "").replace("p", "")
+)
 
 cwd = str(pathlib.Path(__file__).parent.absolute())
 year_path = f"{cwd}/year{year}"
@@ -54,7 +56,9 @@ values.counter = 0
 
 async def _async():
     try:
-        spec = importlib.util.find_spec(".{}".format(python_filepath.rsplit("/", 1)[1])[:-3], package=python_filepath.rsplit("/", 2)[1])
+        spec = importlib.util.find_spec(
+            ".{}".format(python_filepath.rsplit("/", 1)[1])[:-3], package=python_filepath.rsplit("/", 2)[1]
+        )
     except ModuleNotFoundError:
         print(f"Error: invalid import - module not found @ {python_filepath}")
         sys.exit(1)
@@ -70,7 +74,7 @@ async def _async():
     result_output = False
 
     for key in values.attrs:
-        if key in ("input", ):
+        if key in ("input",):
             continue
 
         result_output = True
