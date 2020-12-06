@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "advent-of-code"
+version = "2020.12"
+description = "My solutions to some of the \"Advent of Code\" programming puzzles."
+authors = ["Carl Oscar Aaro <hello@carloscar.com>"]
+
+[tool.black]
+line-length = 120
+target_version = ["py38"]
+exclude = '\.eggs/|\.git/|\.mypy_cache/|\.venv/|\.pytest_cache/|\.vscode/|__pycache__/|build/|dist/|setup\.py'
+
+[tool.isort]
+profile = "black"
+line_length = 120
+known_first_party = "helpers,matrix,values"
+skip = ".mypy_cache,__pycache__,.eggs,.vscode,dist"
