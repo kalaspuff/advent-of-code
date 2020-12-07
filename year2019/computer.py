@@ -25,7 +25,17 @@ class Opcode(Enum):
 
 
 class IntcodeComputer:
-    __slots__ = ("program", "state", "memory", "instruction_pointer", "operations_processed", "output", "output_function", "input_", "processing")
+    __slots__ = (
+        "program",
+        "state",
+        "memory",
+        "instruction_pointer",
+        "operations_processed",
+        "output",
+        "output_function",
+        "input_",
+        "processing",
+    )
 
     def __init__(self, program):
         self.state = "INITIALIZING"
@@ -71,7 +81,7 @@ class IntcodeComputer:
     @property
     def instruction(self):
         parameters = self.opcode.parameters
-        return self.memory[self.instruction_pointer:(self.instruction_pointer + 1 + parameters)]
+        return self.memory[self.instruction_pointer : (self.instruction_pointer + 1 + parameters)]
 
     @property
     def parameter_modes(self):
@@ -182,10 +192,10 @@ class IntcodeComputer:
 
     def __str__(self):
         if self.state == "FINISHED" and self.opcode == Opcode.HALT:
-            return f"<IntcodeComputer state=\"{self.state}\" ops={self.operations_processed} pointer={self.instruction_pointer}>"
+            return f'<IntcodeComputer state="{self.state}" ops={self.operations_processed} pointer={self.instruction_pointer}>'
         if self.processing:
-            return f"<IntcodeComputer state=\"{self.state}\" ops={self.operations_processed} pointer={self.instruction_pointer} current={self.opcode}>"
-        return f"<IntcodeComputer state=\"{self.state}\" ops={self.operations_processed} pointer={self.instruction_pointer} next={self.opcode}>"
+            return f'<IntcodeComputer state="{self.state}" ops={self.operations_processed} pointer={self.instruction_pointer} current={self.opcode}>'
+        return f'<IntcodeComputer state="{self.state}" ops={self.operations_processed} pointer={self.instruction_pointer} next={self.opcode}>'
 
     def __repr__(self):
         return str(self)

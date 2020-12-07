@@ -1,4 +1,4 @@
-from helpers import tuple_add, manhattan_distance
+from helpers import manhattan_distance, tuple_add
 from matrix import Matrix
 from values import values
 

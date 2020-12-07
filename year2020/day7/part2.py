@@ -7,7 +7,7 @@ async def run():
     bag_rules = {}
     for bag_type, contents_str in values.match_rows(r"^([a-z]+ [a-z]+) bags contain (.*)[.]$"):
         contents = {}
-        if contents_str != 'no other bags':
+        if contents_str != "no other bags":
             for c in contents_str.split(", "):
                 m = re.match(r"^([0-9]+) ([a-z]+ [a-z]+) bags?$", c)
                 contents[m.group(2)] = int(m.group(1))
