@@ -12,15 +12,15 @@ default:
 
 .PHONY: black
 black:
-	poetry run black ./*.py year*/day*/*.py
+	poetry run black ./*.py year*/*.py year*/day*/*.py
 
 .PHONY: isort
 isort:
-	poetry run isort ./*.py year*/day*/*.py
+	poetry run isort ./*.py year*/*.py year*/day*/*.py
 
 .PHONY: flake8
 flake8:
-	poetry run flake8 ./*.py year*/day*/*.py
+	poetry run flake8 ./*.py year*/*.py year*/day*/*.py
 
 .PHONY: mypy
 mypy:

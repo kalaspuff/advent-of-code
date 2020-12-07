@@ -26,6 +26,11 @@ def binary_space_partitioning(
     return b
 
 
+def manhattan_distance(pos_1: Tuple[int, int], pos_2: Tuple[int, int]) -> int:
+    # also known as manhattan length, snake distance, taxicab metric, etc.
+    return max(pos_1[0], pos_2[0]) - min(pos_1[0], pos_2[0]) + max(pos_1[1], pos_2[1]) - min(pos_1[1], pos_2[1])
+
+
 def int_minus(value: Any, mod: Union[int, str] = 1) -> int:
     return int(value) - int(mod)
 

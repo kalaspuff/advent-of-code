@@ -55,8 +55,28 @@ class Values:
         return list(map(int, self.rows))
 
     @property
+    def rows_int(self) -> List[int]:
+        return self.int_rows
+
+    @property
     def input_int_rows(self) -> List[int]:
         return self.int_rows
+
+    @property
+    def csv(self) -> List[str]:
+        return self.input_.split(",")
+
+    @property
+    def input_csv(self) -> List[str]:
+        return self.csv
+
+    @property
+    def int_csv(self) -> List[int]:
+        return list(map(int, self.csv))
+
+    @property
+    def csv_int(self) -> List[int]:
+        return self.int_csv
 
     @property
     def matrix(self) -> Matrix:
