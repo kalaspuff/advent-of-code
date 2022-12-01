@@ -3,6 +3,7 @@ import itertools
 import math
 import re
 
+import helpers
 from values import values
 
 
@@ -10,9 +11,9 @@ async def run():
     pass
 
 
-# [values.year]            (number)  2020
+# [values.year]            (number)  2022
 # [values.day]             (number)  0
 # [values.part]            (number)  1
-# [values.input_filename]  (str)     ./year2020/day0/input
+# [values.input_filename]  (str)     ./year2022/day0/input
 #
 # Result: ...
