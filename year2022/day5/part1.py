@@ -11,14 +11,14 @@ async def run():
         if re.match(r"^[0-9 ]*$", row):
             break
 
-        crates = [row[i+1] for i in range(0, len(row), 4)]
+        crates = [row[i + 1] for i in range(0, len(row), 4)]
         for i, c in enumerate(crates):
             if len(stacks) <= i:
                 stacks.append([])
             if c != " ":
                 stacks[i].insert(0, c)
 
-    for row in values.rows[x+2:]:
+    for row in values.rows[x + 2:]:
         count, from_stack, to_stack = map(int, re.match(r"^move (\d+) from (\d+) to (\d+)$", row).groups())
         from_stack -= 1
         to_stack -= 1
