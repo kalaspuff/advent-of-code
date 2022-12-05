@@ -45,7 +45,7 @@ input_ = ""
 with open(input_filename_fullpath, "r") as f:
     input_ = f.read()
 
-input_ = input_.strip()
+input_ = input_.rstrip()
 
 values.input_ = input_
 
