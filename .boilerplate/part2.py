@@ -8,7 +8,12 @@ from values import values
 
 
 async def run():
-    pass
+    result = 0
+
+    for row in values.rows:
+        pass
+
+    return result
 
 
 # [values.year]            (number)  2022
