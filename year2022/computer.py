@@ -59,7 +59,12 @@ class Directory:
 
 
 class Filesystem:
-    def __init__(self, label, mount, total_space):
+    def __init__(self, label, mount, total_space=0):
+        if not label:
+            raise ValueError("Filesystem label must be set")
+        if not mount or mount[0] != "/":
+            raise ValueError("Filesystem mount point invalid")
+
         self.label = label
         self.mount = mount
         self.root = Directory(self, "")
@@ -67,6 +72,8 @@ class Filesystem:
 
     @property
     def available_space(self):
+        if not self.total_space:
+            return 0
         return self.total_space - self.used_space
 
     @property
@@ -181,6 +188,13 @@ class Interface:
 
 class Computer:
     def __init__(self, name, filesystems):
+        if not any([fs.mount == "/" for fs in filesystems]):
+            raise ValueError("No root filesystem")
+        if len(set([fs.mount for fs in filesystems])) != len(filesystems):
+            raise ValueError("Multiple filesystems with the same mount point")
+        if len(set([fs.label for fs in filesystems])) != len(filesystems):
+            raise ValueError("Multiple filesystems with the same label")
+
         self.name = name
         self.filesystems = {fs.label: fs for fs in filesystems}
 
@@ -209,13 +223,25 @@ class Computer:
 
     def get_all_dirs(self):
         result = []
-        for fs in sorted(self.filesystems.values(), key=lambda x: x.mount):
-            dirs = [fs.root]
-            while dirs:
-                cwd = dirs.pop()
-                result.append(cwd)
-                for dir in sorted(cwd.dirs.values(), key=lambda d: d.path, reverse=True):
-                    dirs.append(dir)
+        fs = sorted(self.filesystems.values(), key=lambda x: x.mount)[0]
+        dirs = [fs.root]
+        while dirs:
+            cwd = dirs.pop()
+            result.append(cwd)
+            for dir in sorted(cwd.dirs.values(), key=lambda d: d.path, reverse=True):
+                dirs.append(dir)
+        return result
+
+    def get_all_files(self):
+        result = []
+        fs = sorted(self.filesystems.values(), key=lambda x: x.mount)[0]
+        dirs = [fs.root]
+        while dirs:
+            cwd = dirs.pop()
+            for file in sorted(cwd.files.values(), key=lambda f: f.name):
+                result.append(file)
+            for dir in sorted(cwd.dirs.values(), key=lambda d: d.path, reverse=True):
+                dirs.append(dir)
         return result
 
     def get_info(self, clean=False):
