@@ -1,6 +1,19 @@
+import asyncio
 import re
 import sys
 from functools import reduce
+
+from pygments import highlight
+from prompt_toolkit.application.current import get_app
+from prompt_toolkit.filters import Condition
+from prompt_toolkit.formatted_text import to_formatted_text
+from prompt_toolkit.renderer import print_formatted_text
+from prompt_toolkit.styles import Style
+from prompt_toolkit import PromptSession
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.patch_stdout import patch_stdout
 
 
 class File:
@@ -110,16 +123,23 @@ class Command:
                 self.args = [arg for arg in str(m.group(2) or "").strip().split(" ") if arg]
                 self.cmd = m.group(1).strip()
 
+        if self.cmd in ("exit", "quit"):
+            self.cmd = "logout"
+
     def execute(self, interface):
         output = []
 
         if not self.cmd:
             return output
 
+        if not re.match(r"^[a-z0-9_]+$", self.cmd):
+            interface.error_out([f"[err] ⌁ {self.cmd}: command not found"])
+            return output
+
         try:
             func = getattr(self, f"cmd_{self.cmd}")
         except AttributeError:
-            interface.error_out([f"➔ [shell] {self.cmd}: command not found"])
+            interface.error_out([f"[err] ⌁ {self.cmd}: command not found"])
             return output
 
         if self.echo:
@@ -128,14 +148,11 @@ class Command:
         try:
             output = func(interface, self.args, self.output)
         except Exception as exc:
-            interface.error_out([f"➔ [error] {self.cmd}: {exc}"])
+            interface.error_out([f"[err] ⌁ {self.cmd}: {exc}"])
             return output
 
         interface.out(output)
         return output
-
-    def cmd_exit(self, interface, args, output=None):
-        interface.disconnect()
 
     def cmd_logout(self, interface, args, output=None):
         interface.disconnect()
@@ -223,14 +240,104 @@ class Interface:
         self.error_output = []
         self.error = False
 
-    def connect(self, interactive=True):
+    async def connect(self, interactive=True):
         self.tty = True
 
-        while self.tty and interactive:
-            sys.stdout.write("$ ")
-            sys.stdout.flush()
-            cmdline = sys.stdin.readline()
-            self.execute(Command(cmdline))
+        session = PromptSession()
+        bindings = KeyBindings()
+
+        style = Style.from_dict({
+            # User input (default text).
+            '':          '#aaaa88 bold',
+
+            # Prompt.
+            'device':   '#ffff44',
+            'square':   '#aaaa88 bold',
+            'pound':    '#884444',
+            'path_delimiter': '#338833 bold',
+            'path':          '#00aa00 bold',
+        })
+
+
+        class CustomCompleter(Completer):
+            def get_completions(_, document, complete_event):
+                if document.text_after_cursor:
+                    return
+
+                cmd = ""
+                path_search = False
+                prefix_completion = ""
+                path_arg = ""
+                if document.text.lstrip(" ").split(" ", 1)[0] in ("cd", "touch", "mkdir"):
+                    cmd = document.text.lstrip(" ").split(" ", 1)[0]
+                    path_arg = document.text.lstrip(" ").lstrip(cmd).lstrip(" ")
+                    if document.text.lstrip(" ") == cmd:
+                        prefix_completion = " "
+                    path_search = True
+
+                if path_search:
+                    prefix = path_arg
+                    last_prefix = prefix
+                    cwd = self.cwd
+                    path = ""
+                    if "/" == prefix:
+                        cwd = self.get_relative_dir("/")
+                        last_prefix = ""
+                        path = "/"
+                    elif "/" in prefix:
+                        path, last_prefix = prefix.rsplit("/", 1)
+                        try:
+                            cwd = self.get_relative_dir(path)
+                        except Exception:
+                            return
+                        path += "/"
+                    for name in sorted([d.name for d in cwd.dirs.values()]) + ([".."] if (not path or prefix.split("/")[-2:][0] == "..") and cwd.path != "/" else []):
+                        if name.startswith(last_prefix):
+                            yield Completion(f"{prefix_completion}{path}{name}/".replace("//", "/"), display=f"➔ {path}{name}", display_meta=self.get_relative_dir(f"{path}{name}").path, start_position=-len(prefix), style='bg:#444444 fg:#ddddaa bold', selected_style='bg:#ffff44 fg:#000000')
+
+        @bindings.add('c-d')
+        def _(event):
+            event.app.current_buffer.text = "logout"
+            self.disconnect()
+            event.app.exit()
+
+        @Condition
+        def completion_selected() -> bool:
+            app = get_app()
+            return (
+                app.current_buffer.complete_state is not None
+                and app.current_buffer.complete_state.current_completion
+            )
+
+        @bindings.add('tab', filter=completion_selected)
+        @bindings.add('right', filter=completion_selected)
+        def _(event):
+            b = event.current_buffer
+            event.app.current_buffer.complete_state = None
+            b.insert_text("")
+
+        try:
+            while self.tty and interactive:
+                message = [
+                    ('class:square',   '['),
+                    ('class:device',   self.computer.name),
+                    ('class:square',   '] '),
+                ]
+
+                for p in self.cwd.path.split("/")[1:]:
+                    message.append(('class:path_delimiter', "/"))
+                    message.append(('class:path', p))
+
+                message.append(('class:pound',   ' ➔ '))
+
+#                print_formatted_text(session.output, message, style=style)
+
+                with patch_stdout():
+                    cmdline = await session.prompt_async(message, key_bindings=bindings, style=style, completer=CustomCompleter(), complete_while_typing=True)
+                if cmdline:
+                    self.execute(Command(cmdline))
+        except EOFError:
+            self.disconnect()
 
     def disconnect(self):
         self.tty = False
@@ -273,7 +380,7 @@ class Computer:
 
     def _get_path(self, path):
         return "/" + "/".join(
-            reduce(lambda a, b: ((a + [b]) if b != ".." else a[:-1]) if b else a, [p for p in path.split("/") if p], [])
+            reduce(lambda a, b: ((a + [b]) if b != ".." else a[:-1]) if b else a, [p for p in path.split("/") if p and p != "."], [])
         )
 
     def get_filesystem(self, path):
