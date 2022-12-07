@@ -4,7 +4,7 @@ from values import values
 async def run():
     count = 4
     for i in range(len(values.input_)):
-        if len(set(list(values.input_[i:i + count]))) == count:
+        if len(set(list(values.input_[i : i + count]))) == count:
             return i + count
 
 

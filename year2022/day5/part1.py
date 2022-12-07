@@ -18,7 +18,7 @@ async def run():
             if c != " ":
                 stacks[i].insert(0, c)
 
-    for row in values.rows[x + 2:]:
+    for row in values.rows[x + 2 :]:
         count, from_stack, to_stack = map(int, re.match(r"^move (\d+) from (\d+) to (\d+)$", row).groups())
         from_stack -= 1
         to_stack -= 1

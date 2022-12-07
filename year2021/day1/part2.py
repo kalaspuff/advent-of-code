@@ -5,7 +5,7 @@ async def run():
     last_value = None
     increases = 0
     for i in range(len(values.int_rows)):
-        v = sum(values.int_rows[i:(i + 3)])
+        v = sum(values.int_rows[i : (i + 3)])
         if last_value is not None and v > last_value:
             increases += 1
         last_value = v

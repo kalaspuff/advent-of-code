@@ -1,5 +1,3 @@
-import sys
-
 from values import values
 from year2022.computer import Computer, Filesystem
 

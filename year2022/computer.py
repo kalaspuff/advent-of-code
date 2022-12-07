@@ -42,7 +42,9 @@ class Directory:
 
     @property
     def size(self):
-        return sum([dir.size for dir in self.dirs.values() if dir.filesystem == self.filesystem]) + sum([file.size for file in self.files.values() if file.filesystem == self.filesystem])
+        return sum([dir.size for dir in self.dirs.values() if dir.filesystem == self.filesystem]) + sum(
+            [file.size for file in self.files.values() if file.filesystem == self.filesystem]
+        )
 
     @property
     def path(self):
@@ -86,8 +88,8 @@ class Command:
         self.args = args
         self.output = output
         if cmdline is not None and cmdline.encode() == b"":
-           self.cmd = "logout"
-           self.echo = True
+            self.cmd = "logout"
+            self.echo = True
         if cmdline is not None:
             m = re.match(r"([^ ]+)(?:\s+(.*))?$", cmdline)
             if m:
@@ -183,7 +185,9 @@ class Computer:
         self.filesystems = {fs.label: fs for fs in filesystems}
 
     def _get_path(self, path):
-        return "/" + "/".join(reduce(lambda a, b: ((a + [b]) if b != ".." else a[:-1]) if b else a, [p for p in path.split("/") if p], []))
+        return "/" + "/".join(
+            reduce(lambda a, b: ((a + [b]) if b != ".." else a[:-1]) if b else a, [p for p in path.split("/") if p], [])
+        )
 
     def get_filesystem(self, path):
         path = self._get_path(path)
@@ -196,7 +200,7 @@ class Computer:
     def get_dir(self, path):
         path = self._get_path(path)
         filesystem = self.get_filesystem(path)
-        fs_path = path[len(filesystem.mount):]
+        fs_path = path[len(filesystem.mount) :]
         dir = filesystem.root
         for p in fs_path.split("/"):
             if p:

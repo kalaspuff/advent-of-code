@@ -4,7 +4,7 @@ from values import values
 async def run():
     result = 0
 
-    for a1, a2, b1, b2 in values.match_rows(r"(\d+)-(\d+),(\d+)-(\d+)", (int, )):
+    for a1, a2, b1, b2 in values.match_rows(r"(\d+)-(\d+),(\d+)-(\d+)", (int,)):
         ax = set(range(int(a1), int(a2) + 1))
         bx = set(range(int(b1), int(b2) + 1))
         overlap = ax & bx

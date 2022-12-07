@@ -24,11 +24,13 @@ async def run():
         game_result = ""
         if mapping[they] == mapping[me]:
             game_result = "draw"
-        elif any([
-            they == "A" and me == "Y",
-            they == "B" and me == "Z",
-            they == "C" and me == "X",
-        ]):
+        elif any(
+            [
+                they == "A" and me == "Y",
+                they == "B" and me == "Z",
+                they == "C" and me == "X",
+            ]
+        ):
             game_result = "win"
         else:
             game_result = "loss"

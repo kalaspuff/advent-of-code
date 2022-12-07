@@ -13,7 +13,7 @@ async def run():
             continue
         if not any([f"{d}{d}" in str_password for d in range(0, 10)]):
             continue
-        if not any([re.findall(fr"[^{d}]{d}{d}[^{d}]", f" {str_password} ") for d in range(0, 10)]):
+        if not any([re.findall(rf"[^{d}]{d}{d}[^{d}]", f" {str_password} ") for d in range(0, 10)]):
             continue
         if not all([True if i == 0 or list_password[i - 1] <= d else False for i, d in enumerate(list_password)]):
             continue
