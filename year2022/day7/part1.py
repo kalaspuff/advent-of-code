@@ -7,7 +7,7 @@ async def run():
     cpu.set_state_from_terminal_log(values.input_)
 
     # from year2022.computer import Command, Interface
-    # Interface(cpu).execute(Command(cmdline="info"))
+    # Interface(cpu).execute(Command("info"))
     # Interface(cpu).connect()
 
     return sum([dir.size for dir in cpu.get_all_dirs() if dir.size <= 100000])

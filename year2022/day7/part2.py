@@ -7,7 +7,7 @@ async def run():
     cpu.set_state_from_terminal_log(values.input_)
 
     return min(
-        [dir.size for dir in cpu.get_all_dirs() if dir.size >= 30000000 - cpu.filesystems["root"].available_space]
+        [dir.size for dir in cpu.get_all_dirs() if dir.size >= 30000000 - cpu.filesystems["root"].free_space]
     )
 
 
