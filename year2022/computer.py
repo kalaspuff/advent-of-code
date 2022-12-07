@@ -232,7 +232,7 @@ class Computer:
             else:
                 result.append("  " * cwd_level + "∴ " + (f"{cwd.name}/" if clean else f"{cwd}"))
             for file in sorted(cwd.files.values(), key=lambda d: d.path):
-                result.append("  " * (cwd_level + 1) + f"· " + (f"{file.name}" if clean else f"{file}"))
+                result.append("  " * (cwd_level + 1) + "· " + (file.name if clean else f"{file}"))
             for dir in sorted(cwd.dirs.values(), key=lambda d: d.path, reverse=True):
                 dirs.append(dir)
         result.append("")
