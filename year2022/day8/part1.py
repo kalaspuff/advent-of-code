@@ -2,19 +2,12 @@ from values import values
 
 
 async def run():
-    result = 0
     matrix = values.matrix
+    result = matrix.width * 2 + matrix.height * 2 - 4
 
-    for y in range(matrix.height):
-        if y <= 0 or y >= matrix.height - 1:
-            result += matrix.width
-            continue
+    for y in range(1, matrix.height - 1):
         horizontal_row = list(map(int, matrix.y(y).rows[0]))
-        for x in range(matrix.width):
-            if x <= 0 or x >= matrix.width - 1:
-                result += 1
-                continue
-
+        for x in range(1, matrix.width - 1):
             value = horizontal_row[x]
 
             if all([value > v for v in horizontal_row[x + 1:]]) or all([value > v for v in horizontal_row[:x]]):
