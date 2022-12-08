@@ -6,9 +6,7 @@ async def run():
     cpu = Computer("the device", filesystems=[Filesystem("root", mount="/", total_space=70000000)])
     cpu.set_state_from_terminal_log(values.input_)
 
-    return min(
-        [dir.size for dir in cpu.get_all_dirs() if dir.size >= 30000000 - cpu.filesystems["root"].free_space]
-    )
+    return min([dir.size for dir in cpu.get_all_dirs() if dir.size >= 30000000 - cpu.filesystems["root"].free_space])
 
 
 # [values.year]            (number)  2022

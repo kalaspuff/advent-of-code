@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import re
 import sys
 from functools import reduce
@@ -164,7 +165,20 @@ class Command:
         return [interface.cwd.path]
 
     def cmd_mkdir(self, interface, args, output=None):
-        parent = interface.get_relative_dir(args[0] + "/..")
+        try:
+            parent = interface.get_relative_dir(args[0] + "/..")
+        except Exception:
+            closest_parent = None
+            i = 1
+            while not closest_parent:
+                i += 1
+                try:
+                    closest_parent = interface.get_relative_dir(args[0] + "/.." * i)
+                except Exception:
+                    pass
+            missing_dir = interface.get_relative_dir(args[0] + "/.." * (i - 1), return_str_path=True)
+            raise Exception(f"{missing_dir}: No such file or directory")
+
         name = args[0].rstrip("/").split("/")[-1]
 
         if name in ("", ".", ".."):
@@ -177,7 +191,20 @@ class Command:
         parent.mkdir(name)
 
     def cmd_touch(self, interface, args, output=None):
-        parent = interface.get_relative_dir(args[0] + "/..")
+        try:
+            parent = interface.get_relative_dir(args[0] + "/..")
+        except Exception:
+            closest_parent = None
+            i = 1
+            while not closest_parent:
+                i += 1
+                try:
+                    closest_parent = interface.get_relative_dir(args[0] + "/.." * i)
+                except Exception:
+                    pass
+            missing_dir = interface.get_relative_dir(args[0] + "/.." * (i - 1), return_str_path=True)
+            raise Exception(f"{missing_dir}: No such file or directory")
+
         name = args[0].rstrip("/").split("/")[-1]
 
         if name in ("", ".", ".."):
@@ -239,6 +266,7 @@ class Interface:
         self.output = []
         self.error_output = []
         self.error = False
+        self.username = "elf"
 
     async def connect(self, interactive=True):
         self.tty = True
@@ -246,18 +274,59 @@ class Interface:
         session = PromptSession()
         bindings = KeyBindings()
 
-        style = Style.from_dict({
-            # User input (default text).
-            '':          '#aaaa88 bold',
+        style = Style.from_dict(
+            {
+                # User input (default text).
+                # "": "#aaaa88 bold",
+                "": "#bbaabb bold",
+                # Prompt.
+                "username": "#44ff44 bold",
+                "at": "#aaaaaa",
+                "device": "#ffff44 bold",
+                "square": "#aaaa88 bold",
+                "pound": "#884444 bold",
+                "time": "#ff0000 bold",
+                "day": "#ff00ff bold",
+                # "path_delimiter": "#4444aa bold",
+                # "path": "#8888ee bold",
+                # "path_delimiter": "#338833 bold",
+                # "path": "#00aa00 bold",
+                "path_delimiter": "#444444 bold",
+                "path": "#8888ee bold",
+                "active_path": "#8888ee bold",
+                # Right prompt.
+                "rprompt": "#202020 bg:#efdd74 bold",
+                # Bottom toolbar.
+                "bottom-toolbar": "#111111 bg:#aaaaaa bold",
+                "bottom-toolbar.green": "bg:#5cc040",
+                "bottom-toolbar.red": "bg:#f04040",
+                "bottom-toolbar.yellow": "bg:#f0f040",
+                "bottom-toolbar.symbol": "bg:#606060",
+                "bottom-toolbar.triangle": "bg:#8080f0",
+                # "bottom-toolbar": "#5cc040 bg:#000000 bold",
+                # "bottom-toolbar.box": "bg:#aaaaaa",
+                # "bottom-toolbar.delimiter": "bg:#145410",
+                # "bottom-toolbar.info": "bg:#000000",
+                # "bottom-toolbar.title": "bg:#000000",
 
-            # Prompt.
-            'device':   '#ffff44',
-            'square':   '#aaaa88 bold',
-            'pound':    '#884444',
-            'path_delimiter': '#338833 bold',
-            'path':          '#00aa00 bold',
-        })
+                # "bottom-toolbar": "#acc040 bg:#000000 bold",
+                # "bottom-toolbar.box": "bg:#aaaaaa",
+                # "bottom-toolbar.delimiter": "bg:#444400",
+                # "bottom-toolbar.info": "bg:#000000",
+                # "bottom-toolbar.title": "bg:#000000",
 
+                # "bottom-toolbar.box": "bg:#aaaaaa",
+                # "bottom-toolbar.delimiter": "bg:#aaddaa",
+                # "bottom-toolbar.info": "bg:#6677cc",
+                # "bottom-toolbar.title": "bg:#6677cc",
+                "bottom-toolbar.delimiter2": "bg:#88dddd",
+                "bottom-toolbar.info2": "bg:#88bbaa",
+                "bottom-toolbar.title2": "bg:#88bbaa",
+                "bottom-toolbar.delimiter3": "bg:#aaddaa",
+                "bottom-toolbar.info3": "bg:#66cc99",
+                "bottom-toolbar.title3": "bg:#66cc99",
+            }
+        )
 
         class CustomCompleter(Completer):
             def get_completions(_, document, complete_event):
@@ -291,11 +360,20 @@ class Interface:
                         except Exception:
                             return
                         path += "/"
-                    for name in sorted([d.name for d in cwd.dirs.values()]) + ([".."] if (not path or prefix.split("/")[-2:][0] == "..") and cwd.path != "/" else []):
+                    for name in sorted([d.name for d in cwd.dirs.values()]) + (
+                        [".."] if (not path or prefix.split("/")[-2:][0] == "..") and cwd.path != "/" else []
+                    ):
                         if name.startswith(last_prefix):
-                            yield Completion(f"{prefix_completion}{path}{name}/".replace("//", "/"), display=f"➔ {path}{name}", display_meta=self.get_relative_dir(f"{path}{name}").path, start_position=-len(prefix), style='bg:#444444 fg:#ddddaa bold', selected_style='bg:#ffff44 fg:#000000')
+                            yield Completion(
+                                f"{prefix_completion}{path}{name}/".replace("//", "/"),
+                                display=f"➔ {path}{name}",
+                                display_meta=self.get_relative_dir(f"{path}{name}").path,
+                                start_position=-len(prefix),
+                                style="bg:#444444 fg:#ddddcc bold",
+                                selected_style="bg:#eeeeff fg:#000000",
+                            )
 
-        @bindings.add('c-d')
+        @bindings.add("c-d")
         def _(event):
             event.app.current_buffer.text = "logout"
             self.disconnect()
@@ -305,35 +383,91 @@ class Interface:
         def completion_selected() -> bool:
             app = get_app()
             return (
-                app.current_buffer.complete_state is not None
-                and app.current_buffer.complete_state.current_completion
+                app.current_buffer.complete_state is not None and app.current_buffer.complete_state.current_completion
             )
 
-        @bindings.add('tab', filter=completion_selected)
-        @bindings.add('right', filter=completion_selected)
+        @bindings.add("tab", filter=completion_selected)
+        @bindings.add("right", filter=completion_selected)
         def _(event):
             b = event.current_buffer
             event.app.current_buffer.complete_state = None
             b.insert_text("")
 
+        def bottom_toolbar():
+            timedelta = datetime.datetime.now() - datetime.datetime.utcnow()
+            timedelta_seconds = round(timedelta.seconds + timedelta.microseconds * 1e-6)
+            short_str = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone(datetime.timezone(offset=datetime.timedelta(seconds=timedelta_seconds))).strftime("%a %-d %b %Y %H:%M:%S %z")
+
+            event_name = "next AoC"
+            event_timedelta = datetime.datetime(datetime.datetime.utcnow().year, datetime.datetime.utcnow().month, datetime.datetime.utcnow().day, 5, 0, 0) - datetime.datetime.utcnow()
+            if event_timedelta.days < 0:
+                event_timedelta = datetime.datetime(datetime.datetime.utcnow().year, datetime.datetime.utcnow().month, datetime.datetime.utcnow().day, 5, 0, 0) - datetime.datetime.utcnow() + datetime.timedelta(days=1)
+
+            if event_timedelta.days == 0 and event_timedelta.seconds < 3600:
+                event_timedelta_str = f"{((event_timedelta.seconds % 3600) // 60)}m {(event_timedelta.seconds % 60)}s"
+            elif event_timedelta.days == 0:
+                event_timedelta_str = f"{event_timedelta.seconds // 3600}h {((event_timedelta.seconds % 3600) // 60)}m"
+            else:
+                event_timedelta_str = f"{event_timedelta.days}d {event_timedelta.seconds // 3600}h {((event_timedelta.seconds % 3600) // 60)}m"
+
+            output = [
+                ("class:bottom-toolbar.title2", "❄ "),
+                ("class:bottom-toolbar.info", f"{event_timedelta_str} to {event_name}"),
+                ("class:bottom-toolbar.title2", " ❄ "),
+                ('class:bottom-toolbar.info', short_str),
+            ]
+
+            columns = session.app.output.get_size().columns - sum([len(v) for _, v in output])
+            msg = "connected ✓"
+            msg_style = "class:bottom-toolbar.green"
+            # msg = "error ✖"
+            # msg_style = "class:bottom-toolbar.red"
+
+            output += [
+                ("class:bottom-toolbar", " " * (columns - len(msg))),
+                (msg_style, msg)
+            ]
+
+            return output
+
+        async def _invalidate_interval():
+            app = session.app
+            if not app or app.is_done or not self.tty:
+                return
+            app.invalidate()
+            await asyncio.sleep(0.5)
+            asyncio.ensure_future(_invalidate_interval())
+
+        asyncio.ensure_future(_invalidate_interval())
+        session.app.refresh_interval = 5
+
         try:
             while self.tty and interactive:
                 message = [
-                    ('class:square',   '['),
-                    ('class:device',   self.computer.name),
-                    ('class:square',   '] '),
+                    ("class:square", "["),
+                    ("class:username", self.username),
+                    ("class:at", " ➔ "),
+                    ("class:device", self.computer.name),
+                    ("class:square", "] "),
                 ]
 
-                for p in self.cwd.path.split("/")[1:]:
-                    message.append(('class:path_delimiter', "/"))
-                    message.append(('class:path', p))
+                for p in self.cwd.path.split("/")[1:-1]:
+                    message.append(("class:path_delimiter", "/"))
+                    message.append(("class:path", p))
+                message.append(("class:path_delimiter", "/"))
+                message.append(("class:active_path", self.cwd.path.split("/")[-1]))
 
-                message.append(('class:pound',   ' ➔ '))
-
-#                print_formatted_text(session.output, message, style=style)
+                message.append(("class:pound", " ≡ "))
 
                 with patch_stdout():
-                    cmdline = await session.prompt_async(message, key_bindings=bindings, style=style, completer=CustomCompleter(), complete_while_typing=True)
+                    cmdline = await session.prompt_async(
+                        message,
+                        bottom_toolbar=bottom_toolbar,
+                        key_bindings=bindings,
+                        style=style,
+                        completer=CustomCompleter(),
+                        complete_while_typing=True,
+                    )
                 if cmdline:
                     self.execute(Command(cmdline))
         except EOFError:
@@ -342,9 +476,9 @@ class Interface:
     def disconnect(self):
         self.tty = False
 
-    def get_relative_dir(self, path):
+    def get_relative_dir(self, path, return_str_path=False):
         cpu = self.computer
-        return cpu.get_dir(path) if path.startswith("/") else cpu.get_dir(f"{self.cwd.path}/{path}")
+        return cpu.get_dir(path, return_str_path) if path.startswith("/") else cpu.get_dir(f"{self.cwd.path}/{path}", return_str_path)
 
     def execute(self, command):
         return command.execute(self)
@@ -380,7 +514,11 @@ class Computer:
 
     def _get_path(self, path):
         return "/" + "/".join(
-            reduce(lambda a, b: ((a + [b]) if b != ".." else a[:-1]) if b else a, [p for p in path.split("/") if p and p != "."], [])
+            reduce(
+                lambda a, b: ((a + [b]) if b != ".." else a[:-1]) if b else a,
+                [p for p in path.split("/") if p and p != "."],
+                [],
+            )
         )
 
     def get_filesystem(self, path):
@@ -393,8 +531,10 @@ class Computer:
 
         return sorted(candidates, key=lambda x: x[0])[-1][1]
 
-    def get_dir(self, path):
+    def get_dir(self, path, return_str_path=False):
         path = self._get_path(path)
+        if return_str_path:
+            return path
         fs = self.get_filesystem(path)
         relative_path = path[len(fs.mount) :]
 
