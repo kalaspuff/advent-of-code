@@ -1,3 +1,5 @@
+import itertools
+
 from values import values
 
 
@@ -5,19 +7,15 @@ async def run():
     matrix = values.matrix
     result = matrix.width * 2 + matrix.height * 2 - 4
 
-    for y in range(1, matrix.height - 1):
-        horizontal_row = list(map(int, matrix.y(y).rows[0]))
-        for x in range(1, matrix.width - 1):
-            value = horizontal_row[x]
-
-            if all([value > v for v in horizontal_row[x + 1:]]) or all([value > v for v in horizontal_row[:x]]):
-                result += 1
-                continue
-
-            vertical_row = list(map(int, matrix.x(x).flip.rows[0]))
-            if all([value > v for v in vertical_row[y + 1:]]) or all([value > v for v in vertical_row[:y]]):
-                result += 1
-                continue
+    for x, y in itertools.product(range(1, matrix.height - 1), range(1, matrix.width - 1)):
+        value = int(matrix.get(x, y))
+        if not all([
+            list(itertools.dropwhile(lambda v: int(v) < value, matrix.y(y).rows[0][x + 1:])),
+            list(itertools.dropwhile(lambda v: int(v) < value, matrix.y(y).rows[0][:x])),
+            list(itertools.dropwhile(lambda v: int(v) < value, matrix.x(x).flip.rows[0][y + 1:])),
+            list(itertools.dropwhile(lambda v: int(v) < value, matrix.x(x).flip.rows[0][:y])),
+        ]):
+            result += 1
 
     return result
 

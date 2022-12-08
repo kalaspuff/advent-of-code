@@ -1,4 +1,5 @@
 import functools
+import itertools
 import math
 
 from values import values
@@ -8,21 +9,18 @@ async def run():
     matrix = values.matrix
     scores = []
 
-    score_reducer = lambda a, b: a + (([b] if b < max(a) else [-1]) if -1 not in a else [])
+    score_reducer = lambda a, b: a + (([int(b)] if int(b) < max(a) else [-1]) if -1 not in a else [])
     scenic_score_func = lambda l, v: len(functools.reduce(score_reducer, l, [v])) - 1
 
-    for y in range(1, matrix.height - 1):
-        horizontal_row = list(map(int, matrix.y(y).rows[0]))
-        for x in range(1, matrix.width - 1):
-            value = horizontal_row[x]
-            vertical_row = list(map(int, matrix.x(x).flip.rows[0]))
+    for x, y in itertools.product(range(1, matrix.height - 1), range(1, matrix.width - 1)):
+        value = int(matrix.get(x, y))
 
-            scores.append(math.prod([
-                scenic_score_func(horizontal_row[x + 1:], value),
-                scenic_score_func(reversed(horizontal_row[:x]), value),
-                scenic_score_func(vertical_row[y + 1:], value),
-                scenic_score_func(reversed(vertical_row[:y]), value),
-            ]))
+        scores.append(math.prod([
+            scenic_score_func(matrix.y(y).rows[0][x + 1:], value),
+            scenic_score_func(reversed(matrix.y(y).rows[0][:x]), value),
+            scenic_score_func(matrix.x(x).flip.rows[0][y + 1:], value),
+            scenic_score_func(reversed(matrix.x(x).flip.rows[0][:y]), value),
+        ]))
 
     return max(scores)
 
