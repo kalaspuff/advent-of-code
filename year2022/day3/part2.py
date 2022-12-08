@@ -1,8 +1,10 @@
+import string
+
 from values import values
 
 
 async def run():
-    mapping = dict([t[::-1] for t in enumerate(list("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 1)])
+    mapping = dict([t[::-1] for t in enumerate(list(string.ascii_lowercase + string.ascii_uppercase), 1)])
     grouped_rows = [values.rows[i : i + 3] for i in range(0, len(values.rows), 3)]
 
     prios = []

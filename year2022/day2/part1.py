@@ -2,43 +2,19 @@ from values import values
 
 
 async def run():
-    result = 0
-
     mapping = {
-        "A": 1,
-        "B": 2,
-        "C": 3,
-        "X": 1,
-        "Y": 2,
-        "Z": 3,
-    }
-    res_mapping = {
-        "win": 6,
-        "draw": 3,
-        "loss": 0,
+        "A Y": 6 + 2,
+        "B Z": 6 + 3,
+        "C X": 6 + 1,
+        "A X": 3 + 1,
+        "B Y": 3 + 2,
+        "C Z": 3 + 3,
+        "A Z": 0 + 3,
+        "B X": 0 + 1,
+        "C Y": 0 + 2,
     }
 
-    for row in values.rows:
-        they, me = row.split(" ")
-
-        game_result = ""
-        if mapping[they] == mapping[me]:
-            game_result = "draw"
-        elif any(
-            [
-                they == "A" and me == "Y",
-                they == "B" and me == "Z",
-                they == "C" and me == "X",
-            ]
-        ):
-            game_result = "win"
-        else:
-            game_result = "loss"
-
-        result += mapping[me]
-        result += res_mapping[game_result]
-
-    return result
+    return sum([mapping[row] for row in values.rows])
 
 
 # [values.year]            (number)  2022
