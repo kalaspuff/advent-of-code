@@ -4,6 +4,10 @@ version = "2022.12"
 description = "My solutions to some of the \"Advent of Code\" programming puzzles."
 authors = ["Carl Oscar Aaro <hello@carloscar.com>"]
 
+[tool.poetry.dependencies]
+python = "^3.10"
+prompt_toolkit = "^3.0.36"
+
 [tool.black]
 line-length = 120
 target_version = ["py310"]

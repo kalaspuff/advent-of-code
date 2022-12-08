@@ -1,20 +1,19 @@
 import asyncio
 import datetime
 import re
-import sys
 from functools import reduce
 
-from pygments import highlight
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.filters import Condition
-from prompt_toolkit.formatted_text import to_formatted_text
-from prompt_toolkit.renderer import print_formatted_text
 from prompt_toolkit.styles import Style
 from prompt_toolkit import PromptSession
-from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.patch_stdout import patch_stdout
+
+# from prompt_toolkit.history import InMemoryHistory
+# from prompt_toolkit.formatted_text import to_formatted_text
+# from prompt_toolkit.renderer import print_formatted_text
 
 
 class File:
