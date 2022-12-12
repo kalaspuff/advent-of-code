@@ -23,27 +23,24 @@ async def run():
         if paths and max(paths)[1] > path_len:
             continue
 
-        current = path[-1]
-
-        if current == end:
+        if path[-1] == end:
             if not paths or max(paths)[0:2] < best_values[0:2]:
                 print("FOUND", -path_len)
                 paths.add(best_values)
             continue
 
         for dir_delta in ((0, -1), (1, 0), (0, 1), (-1, 0)):
-            new_pos = move(current, dir_delta)
+            new_pos = move(path[-1], dir_delta)
 
-            if min(new_pos) < 0 or new_pos[0] >= matrix.width or new_pos[1] >= matrix.height:
+            if min(new_pos) < 0 or new_pos[0] >= matrix.width or new_pos[1] >= matrix.height or new_pos in path:
                 continue
 
-            if new_pos not in path:
-                new_elevation = elevation(matrix[new_pos])
-                new_path = (*path, new_pos)
-                new_path_len = len(new_path) - 1
-                if lowest_visited.get(new_pos, new_path_len + 1) > new_path_len and current_elevation >= new_elevation - 1:
-                    path_stack.append((new_elevation, -new_path_len, new_path))
-                    lowest_visited[new_pos] = new_path_len
+            new_elevation = elevation(matrix[new_pos])
+            new_path = (*path, new_pos)
+            new_path_len = len(new_path) - 1
+            if lowest_visited.get(new_pos, new_path_len + 1) > new_path_len and current_elevation >= new_elevation - 1:
+                path_stack.append((new_elevation, -new_path_len, new_path))
+                lowest_visited[new_pos] = new_path_len
 
     _, path_len, path = max(paths)
 
