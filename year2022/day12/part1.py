@@ -11,7 +11,6 @@ async def run():
 
     end = matrix.pos("E")[0]
     start = matrix.pos("S")[0]
-    visited = set([start])
     lowest_visited = {start: 0}
     paths = set()
 
@@ -22,12 +21,10 @@ async def run():
         current_elevation, path_len, path = path_stack.pop(path_stack.index(best_values))
         current = path[-1]
 
-        if not paths or max(paths)[0:2] < best_values[0:2]:
-            print("BUILD", current_elevation, -path_len)
-
         if current == end:
             if not paths or max(paths)[0:2] < best_values[0:2]:
-                print("FOUND", current_elevation, -path_len)
+                print("FOUND", -path_len)
+
             paths.add(best_values)
             continue
 
@@ -41,10 +38,9 @@ async def run():
                 new_elevation = elevation(matrix[new_pos])
                 new_path = (*path, new_pos)
                 new_path_len = len(new_path) - 1
-                if lowest_visited.get(new_pos, new_path_len + 1) > new_path_len and new_path not in visited and current_elevation >= new_elevation - 1:
+                if lowest_visited.get(new_pos, new_path_len + 1) > new_path_len and current_elevation >= new_elevation - 1:
                     path_stack.append((new_elevation, -new_path_len, new_path))
                     lowest_visited[new_pos] = new_path_len
-                    visited.add(new_path)
 
     current_elevation, path_len, path = max(paths)
 
