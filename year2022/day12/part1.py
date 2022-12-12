@@ -36,10 +36,9 @@ async def run():
                 continue
 
             new_elevation = elevation(matrix[new_pos])
-            new_path = (*path, new_pos)
-            new_path_len = len(new_path) - 1
+            new_path_len = 1 - path_len
             if lowest_visited.get(new_pos, new_path_len + 1) > new_path_len and current_elevation >= new_elevation - 1:
-                path_stack.append((new_elevation, -new_path_len, new_path))
+                path_stack.append((new_elevation, -new_path_len, (*path, new_pos)))
                 lowest_visited[new_pos] = new_path_len
 
     _, path_len, path = max(paths)
