@@ -10,7 +10,6 @@ async def run():
     elevation = lambda c: string.ascii_lowercase.index("a" if c == "S" else ("z" if c == "E" else c))
 
     paths = set()
-
     end = matrix.pos("E")[0]
     start = matrix.pos("S")[0]
 
@@ -29,8 +28,7 @@ async def run():
         if current == end:
             if not paths or max(paths)[0:2] < best_values[0:2]:
                 print("FOUND", -path_len)
-
-            paths.add(best_values)
+                paths.add(best_values)
             continue
 
         for dir_delta in ((0, -1), (1, 0), (0, 1), (-1, 0)):
@@ -47,7 +45,7 @@ async def run():
                     path_stack.append((new_elevation, -new_path_len, new_path))
                     lowest_visited[new_pos] = new_path_len
 
-    current_elevation, path_len, path = max(paths)
+    _, path_len, path = max(paths)
 
     return -path_len
 
