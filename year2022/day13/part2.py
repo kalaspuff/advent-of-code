@@ -5,14 +5,16 @@ from values import values
 
 
 def cmp(*args):
-    for pair in list(zip(*args)):
-        if (
-            retval := cmp(*map(lambda x: [x] if isinstance(x, int) else x, pair))
+    return functools.reduce(
+        lambda a, b: a or b,
+        [
+            cmp(*map(lambda v: [v, [v]][isinstance(v, int)], pair))
             if list in map(type, pair)
-            else cmp(*map(lambda x: [[]] * x, pair))
-        ):
-            return retval
-    return max(min(1, operator.sub(*map(len, args))), -1)
+            else cmp(*map(lambda i: [[]] * i, pair))
+            for pair in zip(*args)
+        ]
+        + [0],
+    ) or max(min(1, operator.sub(*map(len, args))), -1)
 
 
 async def run():
