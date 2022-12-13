@@ -1,10 +1,11 @@
 import functools
 import operator
+from typing import List
 
 from values import values
 
 
-def cmp(*args):
+def cmp(*args: List) -> int:
     return functools.reduce(
         lambda a, b: a or b,
         [
@@ -17,7 +18,7 @@ def cmp(*args):
     ) or max(min(1, operator.sub(*map(len, args))), -1)
 
 
-async def run():
+async def run() -> int:
     divider1 = [[2]]
     divider2 = [[6]]
 
