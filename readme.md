@@ -12,32 +12,44 @@ Solutions go in the `yearYYYY/dayXX/part1.py` and `yearYYYY/dayXX/part2.py` file
 
 The Python files `part1.py` and `part2.py` should have a function called `run` defined that will be called. The import `from values import values` is recommended to get easy access to the puzzle input.
 
-Here's an example solution for the puzzle from year 2020, day 3, part 2.
+Here's an example solution for the puzzle from [year 2020, day 3, part 2](https://adventofcode.com/2022/day/13).
 
 ```python
-import math
+import functools
+import operator
+from typing import List
 
-from helpers import tuple_sum
 from values import values
 
 
-async def run():
-    matrix = values.matrix.options(infinite_x=True)
+def cmp(*args: List) -> int:
+    return functools.reduce(
+        lambda a, b: a or b,
+        [
+            cmp(*map(lambda v: [v, [v]][isinstance(v, int)], pair))
+            if list in map(type, pair)
+            else cmp(*map(lambda i: [[]] * i, pair))
+            for pair in zip(*args)
+        ]
+        + [0],
+    ) or max(min(1, operator.sub(*map(len, args))), -1)
 
-    for move in [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)]:
-        chars = []
-        pos = 0, 0
 
-        try:
-            while True:
-                pos = tuple_sum(pos, move)
-                chars.append(matrix[pos])
-        except IndexError:
-            pass
+async def run() -> int:
+    divider1 = [[2]]
+    divider2 = [[6]]
 
-        values.result.append(chars.count("#"))
+    rows = [eval(row) for row in values.rows if row] + [divider1, divider2]
+    sorted_rows = [[]] + sorted(rows, key=functools.cmp_to_key(cmp))
+    return (sorted_rows.index(divider1)) * (sorted_rows.index(divider2))
 
-    return math.prod(values.result)
+
+# [values.year]            (number)  2022
+# [values.day]             (number)  13
+# [values.part]            (number)  2
+# [values.input_filename]  (str)     ./year2022/day13/input
+#
+# Result: 19570
 ```
 
 
@@ -49,16 +61,15 @@ $ python aoc.py <year> <day> <part> [puzzle input filename]
 
 If no puzzle input filename is specified, the default `input` file for the puzzle's day will be used as the puzzle input.
 
-Example – to run the solution from the example above (year 2020, day 3, part 2).
+Example – to run the solution from the example above (year 2022, day 13, part 2).
 
 ```bash
-$ python aoc.py 2020 3 2
+$ python aoc.py 2022 13 2
 
-# [values.year]            (number)  2020
-# [values.day]             (number)  3
+# [values.year]            (number)  2022
+# [values.day]             (number)  13
 # [values.part]            (number)  2
-# [values.input_filename]  (str)     ./year2020/day3/input
-# [values.result]          (list)    [63, 181, 55, 67, 30]
-#
-# Result: 1260601650
+# [values.input_filename]  (str)     ./year2022/day13/input
+# 
+# Result: 19570
 ```
