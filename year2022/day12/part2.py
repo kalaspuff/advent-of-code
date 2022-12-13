@@ -1,49 +1,154 @@
 import string
+import sys
 
 from values import values
 
 
-async def run():
-    matrix = values.matrix
+class Point:
+    pos: tuple[int, int]
+    _char: str
+    _elevation: int
+    _neighbours: tuple["Point", ...]
+    _reversed_neighbours: tuple["Point", ...]
+    _npos: tuple[tuple[int, int], ...]
+    _distance: dict["Point", int]
+    _paths: dict["Point", tuple["Point", ...]]
 
-    move = lambda pos, delta: tuple((v + d for v, d in (zip(pos, delta))))
-    elevation = lambda c: string.ascii_lowercase.index("a" if c == "S" else ("z" if c == "E" else c))
+    _points: dict[tuple[int, int], "Point"]
 
-    paths = set()
-    end = matrix.pos("E")[0]
+    def __new__(cls, pos):
+        if not getattr(cls, "_points", None):
+            cls._points = {}
+        pos = values.matrix.pos(pos)[0] if pos in ("S", "E") else pos
+        if pos not in cls._points:
+            value = super(cls, Point).__new__(cls)
+            value.pos = pos
+            cls._points[pos] = value
+        return cls._points[pos]
 
-    for start in matrix.pos("a") + [matrix.pos("S")[0]]:
-        lowest_visited = {start: 0}
-        path_stack = [(elevation(matrix[start]), 0, (start,))]
+    @property
+    def char(self):
+        if getattr(self, "_char", None) is not None:
+            return self._char
+        self._char = str(values.matrix[self.pos])
+        return self._char
 
-        while path_stack:
-            best_values = max(path_stack)
-            current_elevation, path_len, path = path_stack.pop(path_stack.index(best_values))
+    @property
+    def elevation(self):
+        if getattr(self, "_elevation", None) is not None:
+            return self._elevation
+        if self.char == "S":
+            return 0
+        if self.char == "E":
+            return 25
+        self._elevation = string.ascii_lowercase.index(self.char)
+        return self._elevation
 
-            if paths and max(paths)[1] > path_len:
+    @property
+    def neighbours(self):
+        if getattr(self, "_neighbours", None) is not None:
+            return self._neighbours
+
+        _neighbours = []
+        for np in self.npos:
+            if self.elevation >= Point(np).elevation - 1:
+                _neighbours.append(Point(np))
+
+        self._neighbours = tuple(sorted(_neighbours, key=lambda p: (p.elevation, p.char == "E"), reverse=True))
+        return self._neighbours
+
+    @property
+    def reversed_neighbours(self):
+        if getattr(self, "_reversed_neighbours", None) is not None:
+            return self._reversed_neighbours
+
+        _neighbours = []
+        for np in self.npos:
+            if self.elevation <= Point(np).elevation + 1:
+                _neighbours.append(Point(np))
+
+        self._reversed_neighbours = tuple(sorted(_neighbours, key=lambda p: (p.elevation, p.char == "S"), reverse=False))
+        return self._reversed_neighbours
+
+    @property
+    def npos(self):
+        if getattr(self, "_npos", None) is not None:
+            return self._npos
+
+        _npos = []
+        x, y = self.pos
+        for np in zip((x, x - 1, x, x + 1), (y - 1, y, y + 1, y)):
+            if min(np) < 0 or np[0] >= values.matrix.width or np[1] >= values.matrix.height:
                 continue
+            _npos.append(np)
 
-            if path[-1] == end:
-                if not paths or max(paths)[0:2] < best_values[0:2]:
-                    print("FOUND", -path_len)
-                    paths.add(best_values)
-                continue
+        self._npos = tuple(_npos)
+        return self._npos
 
-            for dir_delta in ((0, -1), (1, 0), (0, 1), (-1, 0)):
-                new_pos = move(path[-1], dir_delta)
+    def distance(self, target, point=None):
+        if getattr(self, "_distance", None) is None:
+            self._distance = {self: 0}
 
-                if min(new_pos) < 0 or new_pos[0] >= matrix.width or new_pos[1] >= matrix.height or new_pos in path:
+        if point is None:
+            try:
+                return self._distance[target] if target != self else 0
+            except KeyError:
+                self._distance[target] = sys.maxsize
+                target.prepare(self)
+                return self._distance[target]
+
+        value = point.distance(target) + 1
+        if target not in self._distance or self._distance[target] > value:
+            self._distance[target] = min(self._distance.get(target, value), value)
+            return True
+        return False
+
+    def prepare(self, target=None):
+        path = [self]
+        while path:
+            point = path.pop()
+            for p in point.neighbours:
+                if p in path or p == self:
                     continue
+                if p.distance(self, point):
+                    if target and p == target:
+                        break
+                    path.append(p)
 
-                new_elevation = elevation(matrix[new_pos])
-                new_path_len = 1 - path_len
-                if lowest_visited.get(new_pos, new_path_len + 1) > new_path_len and current_elevation >= new_elevation - 1:
-                    path_stack.append((new_elevation, -new_path_len, (*path, new_pos)))
-                    lowest_visited[new_pos] = new_path_len
+            path = sorted(path, key=lambda p: p.distance(self), reverse=True)
 
-    _, path_len, path = max(paths)
+    def path(self, target):
+        if getattr(self, "_paths", None) is None:
+            self._paths = {}
 
-    return -path_len
+        if target in self._paths:
+            return self._paths[target]
+
+        value = target.distance(self)
+        result = (target,)
+        for p in target.reversed_neighbours:
+            if p.distance(self) > 0 and p.distance(self) == value - 1:
+                result = (*self.path(p), target)
+                break
+
+        if not result or result[-1] != target or result[0] not in self.reversed_neighbours:
+            return ()
+
+        self._paths[target] = result
+        return result
+
+    def __repr__(self):
+        return f"Point({self.pos[0]}, {self.pos[1]}, elevation={self.elevation})"
+
+
+async def run():
+    result = set()
+    for start in values.matrix.pos("a") + ["S"]:
+        path = Point(start).path(Point("E"))
+        if path:
+            result.add(len(path))
+
+    return min(result)
 
 
 # [values.year]            (number)  2022
