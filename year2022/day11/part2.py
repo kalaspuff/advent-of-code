@@ -14,7 +14,14 @@ class Monkey:
         for row in self.data:
             m = re.match(r"^  Starting items: ([0-9, ]*)$", row)
             if m:
-                items = list(map(int, m.group(1).split(", ", )))
+                items = list(
+                    map(
+                        int,
+                        m.group(1).split(
+                            ", ",
+                        ),
+                    )
+                )
 
         self.items = items or []
 
@@ -96,7 +103,9 @@ async def run():
     for id_, monkey in enumerate(monkeys):
         print(f"Monkey {id_} inspected items {monkey.items_inspected} times.")
 
-    return math.prod(map(lambda m: m.items_inspected, sorted(monkeys, key=lambda monkey: monkey.items_inspected, reverse=True)[0:2]))
+    return math.prod(
+        map(lambda m: m.items_inspected, sorted(monkeys, key=lambda monkey: monkey.items_inspected, reverse=True)[0:2])
+    )
 
 
 # [values.year]            (number)  2022

@@ -15,12 +15,16 @@ async def run():
     for x, y in itertools.product(range(1, matrix.height - 1), range(1, matrix.width - 1)):
         value = int(matrix.get(x, y))
 
-        scores.append(math.prod([
-            scenic_score_func(matrix.y(y).rows[0][x + 1:], value),
-            scenic_score_func(reversed(matrix.y(y).rows[0][:x]), value),
-            scenic_score_func(matrix.x(x).flip.rows[0][y + 1:], value),
-            scenic_score_func(reversed(matrix.x(x).flip.rows[0][:y]), value),
-        ]))
+        scores.append(
+            math.prod(
+                [
+                    scenic_score_func(matrix.y(y).rows[0][x + 1 :], value),
+                    scenic_score_func(reversed(matrix.y(y).rows[0][:x]), value),
+                    scenic_score_func(matrix.x(x).flip.rows[0][y + 1 :], value),
+                    scenic_score_func(reversed(matrix.x(x).flip.rows[0][:y]), value),
+                ]
+            )
+        )
 
     return max(scores)
 

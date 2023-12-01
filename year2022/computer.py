@@ -3,13 +3,13 @@ import datetime
 import re
 from functools import reduce
 
-from prompt_toolkit.application.current import get_app
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.styles import Style
 from prompt_toolkit import PromptSession
-from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.application.current import get_app
 from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.filters import Condition
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.styles import Style
 
 # from prompt_toolkit.history import InMemoryHistory
 # from prompt_toolkit.formatted_text import to_formatted_text
@@ -307,13 +307,11 @@ class Interface:
                 # "bottom-toolbar.delimiter": "bg:#145410",
                 # "bottom-toolbar.info": "bg:#000000",
                 # "bottom-toolbar.title": "bg:#000000",
-
                 # "bottom-toolbar": "#acc040 bg:#000000 bold",
                 # "bottom-toolbar.box": "bg:#aaaaaa",
                 # "bottom-toolbar.delimiter": "bg:#444400",
                 # "bottom-toolbar.info": "bg:#000000",
                 # "bottom-toolbar.title": "bg:#000000",
-
                 # "bottom-toolbar.box": "bg:#aaaaaa",
                 # "bottom-toolbar.delimiter": "bg:#aaddaa",
                 # "bottom-toolbar.info": "bg:#6677cc",
@@ -395,12 +393,38 @@ class Interface:
         def bottom_toolbar():
             timedelta = datetime.datetime.now() - datetime.datetime.utcnow()
             timedelta_seconds = round(timedelta.seconds + timedelta.microseconds * 1e-6)
-            short_str = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone(datetime.timezone(offset=datetime.timedelta(seconds=timedelta_seconds))).strftime("%a %-d %b %Y %H:%M:%S %z")
+            short_str = (
+                datetime.datetime.utcnow()
+                .replace(tzinfo=datetime.timezone.utc)
+                .astimezone(datetime.timezone(offset=datetime.timedelta(seconds=timedelta_seconds)))
+                .strftime("%a %-d %b %Y %H:%M:%S %z")
+            )
 
             event_name = "next AoC"
-            event_timedelta = datetime.datetime(datetime.datetime.utcnow().year, datetime.datetime.utcnow().month, datetime.datetime.utcnow().day, 5, 0, 0) - datetime.datetime.utcnow()
+            event_timedelta = (
+                datetime.datetime(
+                    datetime.datetime.utcnow().year,
+                    datetime.datetime.utcnow().month,
+                    datetime.datetime.utcnow().day,
+                    5,
+                    0,
+                    0,
+                )
+                - datetime.datetime.utcnow()
+            )
             if event_timedelta.days < 0:
-                event_timedelta = datetime.datetime(datetime.datetime.utcnow().year, datetime.datetime.utcnow().month, datetime.datetime.utcnow().day, 5, 0, 0) - datetime.datetime.utcnow() + datetime.timedelta(days=1)
+                event_timedelta = (
+                    datetime.datetime(
+                        datetime.datetime.utcnow().year,
+                        datetime.datetime.utcnow().month,
+                        datetime.datetime.utcnow().day,
+                        5,
+                        0,
+                        0,
+                    )
+                    - datetime.datetime.utcnow()
+                    + datetime.timedelta(days=1)
+                )
 
             if event_timedelta.days == 0 and event_timedelta.seconds < 3600:
                 event_timedelta_str = f"{((event_timedelta.seconds % 3600) // 60)}m {(event_timedelta.seconds % 60)}s"
@@ -413,7 +437,7 @@ class Interface:
                 ("class:bottom-toolbar.title2", "❄ "),
                 ("class:bottom-toolbar.info", f"{event_timedelta_str} to {event_name}"),
                 ("class:bottom-toolbar.title2", " ❄ "),
-                ('class:bottom-toolbar.info', short_str),
+                ("class:bottom-toolbar.info", short_str),
             ]
 
             columns = session.app.output.get_size().columns - sum([len(v) for _, v in output])
@@ -422,10 +446,7 @@ class Interface:
             # msg = "error ✖"
             # msg_style = "class:bottom-toolbar.red"
 
-            output += [
-                ("class:bottom-toolbar", " " * (columns - len(msg))),
-                (msg_style, msg)
-            ]
+            output += [("class:bottom-toolbar", " " * (columns - len(msg))), (msg_style, msg)]
 
             return output
 
@@ -477,7 +498,11 @@ class Interface:
 
     def get_relative_dir(self, path, return_str_path=False):
         cpu = self.computer
-        return cpu.get_dir(path, return_str_path) if path.startswith("/") else cpu.get_dir(f"{self.cwd.path}/{path}", return_str_path)
+        return (
+            cpu.get_dir(path, return_str_path)
+            if path.startswith("/")
+            else cpu.get_dir(f"{self.cwd.path}/{path}", return_str_path)
+        )
 
     def execute(self, command):
         return command.execute(self)

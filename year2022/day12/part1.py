@@ -67,7 +67,9 @@ class Point:
             if self.elevation <= Point(np).elevation + 1:
                 _neighbours.append(Point(np))
 
-        self._reversed_neighbours = tuple(sorted(_neighbours, key=lambda p: (p.elevation, p.char == "S"), reverse=False))
+        self._reversed_neighbours = tuple(
+            sorted(_neighbours, key=lambda p: (p.elevation, p.char == "S"), reverse=False)
+        )
         return self._reversed_neighbours
 
     @property
