@@ -99,6 +99,9 @@ ENV/
 # Mypy cache
 .mypy_cache
 
+# Ruff cache
+.ruff_cache
+
 # VS Code
 .vscode
 *.code-workspace
