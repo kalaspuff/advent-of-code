@@ -70,6 +70,6 @@ $ python aoc.py 2022 13 2
 # [values.day]             (number)  13
 # [values.part]            (number)  2
 # [values.input_filename]  (str)     ./year2022/day13/input
-# 
+#
 # Result: 19570
 ```
