@@ -1,6 +1,6 @@
 import functools
 import re
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Callable, Dict, List, Match, Optional, Sequence, Tuple, Union, cast
 
 
 @functools.lru_cache(maxsize=128)
@@ -123,7 +123,9 @@ def match_rows(rows: List[str], regexp: str, transform: Optional[Union[Tuple[Any
     return [
         (
             transform_all(v) if len(transform) <= i else transform[i](v)
-            for i, v in enumerate(re.match(regexp, row).groups())
+            for i, v in (
+                enumerate(cast(Match[str], re.match(regexp, row)).groups()) if re.match(regexp, row) is not None else ()
+            )
         )
         for row in rows
     ]  # type: ignore
