@@ -120,7 +120,13 @@ def match_rows(rows: List[str], regexp: str, transform: Optional[Union[Tuple[Any
         transform_all = transform
         transform = ()
 
-    return [(transform_all(v) if len(transform) <= i else transform[i](v) for i, v in enumerate(re.match(regexp, row).groups())) for row in rows]  # type: ignore
+    return [
+        (
+            transform_all(v) if len(transform) <= i else transform[i](v)
+            for i, v in enumerate(re.match(regexp, row).groups())
+        )
+        for row in rows
+    ]  # type: ignore
 
 
 def group_rows(rows: List[str], split: str = "", transform: Optional[Callable] = None) -> List[List[str]]:
