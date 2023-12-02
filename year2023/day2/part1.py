@@ -1,18 +1,18 @@
-import functools
-import itertools
-import math
-import re
-
-import helpers
-from matrix import Matrix
+from helpers import inverse_dict, multisplit
 from values import values
 
 
 async def run():
     result = 0
+    max_cubes = {"red": 12, "green": 13, "blue": 14}
 
-    for row in values.rows:
-        pass
+    for game_id, record in values.match_rows(r"^Game (\d+): (.*)$", transform=(int, str)):
+        for rounds in multisplit(record, ["; ", ", "]):
+            cubes = inverse_dict(map(str.split, rounds), transform=(str, int))
+            if any(cubes[color] > max_cubes[color] for color in cubes):
+                break
+        else:
+            result += game_id
 
     return result
 
@@ -22,4 +22,4 @@ async def run():
 # [values.part]            (number)  1
 # [values.input_filename]  (str)     ./year2023/day2/input
 #
-# Result: ...
+# Result: 2406

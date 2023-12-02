@@ -1,18 +1,18 @@
-import functools
-import itertools
-import math
-import re
-
-import helpers
-from matrix import Matrix
+from helpers import inverse_dict, multisplit
 from values import values
 
 
 async def run():
     result = 0
 
-    for row in values.rows:
-        pass
+    for _, record in values.match_rows(r"^Game (\d+): (.*)$", transform=(int, str)):
+        min_cubes = {"red": 0, "green": 0, "blue": 0}
+
+        for rounds in multisplit(record, ["; ", ", "]):
+            cubes = inverse_dict(map(str.split, rounds), transform=(str, int))
+            min_cubes.update({color: max(min_cubes[color], count) for color, count in cubes.items()})
+
+        result += min_cubes["red"] * min_cubes["green"] * min_cubes["blue"]
 
     return result
 
@@ -22,4 +22,4 @@ async def run():
 # [values.part]            (number)  2
 # [values.input_filename]  (str)     ./year2023/day2/input
 #
-# Result: ...
+# Result: 78375
