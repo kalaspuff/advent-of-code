@@ -1,6 +1,6 @@
 import functools
 import re
-from typing import Any, Callable, Dict, List, Match, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 
 @functools.lru_cache(maxsize=128)
@@ -124,7 +124,9 @@ def match_rows(rows: List[str], regexp: str, transform: Optional[Union[Tuple[Any
         (
             transform_all(v) if len(transform) <= i else transform[i](v)
             for i, v in (
-                enumerate(cast(Match[str], re.match(regexp, row)).groups()) if re.match(regexp, row) is not None else ()
+                enumerate(cast(re.Match[str], re.match(regexp, row)).groups())
+                if re.match(regexp, row) is not None
+                else ()
             )
         )
         for row in rows
@@ -150,3 +152,173 @@ def group_rows(rows: List[str], split: str = "", transform: Optional[Callable] =
         groups.append(group)
 
     return groups
+
+
+def inverse_dict(
+    value: Union[dict, tuple[tuple[Any, Any], ...], list[tuple[Any, Any]], Sequence[tuple[Any, Any]], map],
+    transform: Optional[Union[tuple, list[Any]]] = None,
+) -> dict:
+    if not transform:
+        transform = ()
+
+    if isinstance(value, map):
+        value = cast(list[tuple[Any, Any]], list(value))
+
+    return {
+        (transform[0](k) if transform and transform[0] else k): (
+            transform[1](v) if transform and len(transform) > 1 and transform[1] else v
+        )
+        for v, k in (value.items() if isinstance(value, dict) else value)
+    }
+
+
+def inverse_tuple(value: tuple[Any, Any], transform: Optional[Union[tuple, list[Any]]] = None) -> tuple[Any, Any]:
+    if not transform:
+        transform = ()
+
+    return (transform[0](value[1]) if transform and transform[0] else value[1]), (
+        transform[1](value[0]) if transform and len(transform) > 1 and transform[1] else value[0]
+    )
+
+
+def inverse_pairs(
+    value: Union[
+        list[tuple[Any, Any]],
+        tuple[tuple[Any, Any], ...],
+        Sequence[tuple[Any, Any]],
+        map,
+    ],
+    transform: Optional[Union[tuple, list[Any]]] = None,
+) -> list[tuple[Any, Any]]:
+    if not transform:
+        transform = ()
+
+    if isinstance(value, map):
+        value = cast(list[tuple[Any, Any]], list(value))
+
+    return [
+        (
+            (transform[0](v[1]) if transform and transform[0] else v[1]),
+            (transform[1](v[0]) if transform and len(transform) > 1 and transform[1] else v[0]),
+        )
+        for v in value
+    ]
+
+
+def inverse(value: Any, transform: Optional[Union[tuple, list[Any]]] = None) -> Any:
+    if not transform:
+        transform = ()
+
+    if isinstance(value, map):
+        value = list(value)
+
+    if isinstance(value, list):
+        return inverse_pairs(value, transform=transform)
+    if isinstance(value, tuple):
+        return inverse_tuple(value, transform=transform)
+    if isinstance(value, dict):
+        return inverse_dict(value, transform=transform)
+    raise NotImplementedError
+
+
+def flip(value: Any, transform: Optional[Union[tuple, list[Any]]] = None) -> Any:
+    return inverse(value, transform=transform)
+
+
+def swap(value: Any, transform: Optional[Union[tuple, list[Any]]] = None) -> Any:
+    return inverse(value, transform=transform)
+
+
+def transform_dict(
+    value: Union[dict, tuple[tuple[Any, Any], ...], list[tuple[Any, Any]], Sequence[tuple[Any, Any]], map],
+    transform: Optional[Union[tuple, list[Any]]] = None,
+) -> dict:
+    if not transform:
+        transform = ()
+
+    return {
+        (transform[0](k) if transform and transform[0] else k): (
+            transform[1](v) if transform and len(transform) > 1 and transform[1] else v
+        )
+        for k, v in (value.items() if isinstance(value, dict) else value)
+    }
+
+
+def transform_tuple(
+    value: Union[
+        list,
+        tuple,
+        map,
+    ],
+    transform: Optional[Union[tuple, list[Any]]] = None,
+) -> tuple:
+    if not transform:
+        transform = ()
+
+    if isinstance(value, map):
+        value = tuple(value)
+
+    return tuple(
+        transform[i](value[i]) if transform and len(transform) > i and transform[i] else value[i]
+        for i in range(len(value))
+    )
+
+
+def transform_list(
+    value: Union[
+        list,
+        tuple,
+        map,
+    ],
+    transform: Optional[Union[tuple, list[Any]]] = None,
+) -> list:
+    if not transform:
+        transform = ()
+
+    return [
+        cast(Union[type[list], type[tuple]], type(v))(
+            transform[i](v[i]) if transform and len(transform) > i and transform[i] else v[i] for i in range(len(v))
+        )
+        for v in list(value)
+    ]
+
+
+def transform(value: Any, transform: Optional[Union[tuple[Any, ...], list[Any]]] = None) -> Any:
+    if not transform:
+        transform = ()
+
+    if isinstance(value, map):
+        value = list(value)
+
+    if isinstance(value, list):
+        return transform_list(value, transform=transform)
+    if isinstance(value, tuple):
+        return transform_tuple(value, transform=transform)
+    if isinstance(value, dict):
+        return transform_dict(value, transform=transform)
+    raise NotImplementedError
+
+
+def multisplit(
+    value: str,
+    separators: Union[
+        str, list[Union[str, list[str], tuple[str]]], tuple[Union[str, list[str], tuple[str]], ...]
+    ] = " ",
+) -> Union[list[str], list[Union[list[str], list[Union[list[str], list[Union[list[str], list[Any]]]]]]]]:
+    result = [value]
+    if isinstance(separators, str):
+        separators = [separators]
+    sep = separators[0]
+    if not isinstance(sep, (list, tuple)):
+        sep = (sep,)
+
+    for sep_ in sep:
+        sub_result: list[str] = []
+        for r in result:
+            sub_result += r.split(sep_)
+        result = sub_result
+
+    if len(separators) > 1:
+        return [multisplit(r, separators[1:]) for r in result]
+
+    return result
