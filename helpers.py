@@ -214,8 +214,8 @@ def inverse(value: Any, transform: Optional[Union[tuple, list[Any]]] = None) -> 
 
     if isinstance(value, list):
         return inverse_pairs(value, transform=transform)
-    if isinstance(value, tuple):
-        return inverse_tuple(value, transform=transform)
+    if isinstance(value, tuple) and len(value) == 2:
+        return inverse_tuple(cast(tuple[Any, Any], value), transform=transform)
     if isinstance(value, dict):
         return inverse_dict(value, transform=transform)
     raise NotImplementedError
@@ -235,6 +235,9 @@ def transform_dict(
 ) -> dict:
     if not transform:
         transform = ()
+
+    if isinstance(value, map):
+        value = cast(list[tuple[Any, Any]], list(value))
 
     return {
         (transform[0](k) if transform and transform[0] else k): (
