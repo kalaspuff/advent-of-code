@@ -48,8 +48,6 @@ select = [
     "PT", # flake8-pytest-style
     "C4", # flake8-comprehensions
     "A", # flake8-builtins
-    "BLE", # flake8-blind-except
-    "S", # flake8-bandit
 ]
 ignore = [
     "UP007", # union type annotations
