@@ -155,7 +155,15 @@ def group_rows(rows: List[str], split: str = "", transform: Optional[Callable] =
 
 
 def inverse_dict(
-    value: Union[dict, tuple[tuple[Any, Any], ...], list[tuple[Any, Any]], Sequence[tuple[Any, Any]], map],
+    value: Union[
+        dict,
+        tuple[tuple[Any, Any], ...],
+        list[tuple[Any, Any]],
+        list[list],
+        Sequence[list],
+        Sequence[tuple[Any, Any]],
+        map,
+    ],
     transform: Optional[Union[tuple, list[Any]]] = None,
 ) -> dict:
     if not transform:
@@ -185,6 +193,8 @@ def inverse_pairs(
     value: Union[
         list[tuple[Any, Any]],
         tuple[tuple[Any, Any], ...],
+        list[list],
+        Sequence[list],
         Sequence[tuple[Any, Any]],
         map,
     ],
@@ -230,7 +240,15 @@ def swap(value: Any, transform: Optional[Union[tuple, list[Any]]] = None) -> Any
 
 
 def transform_dict(
-    value: Union[dict, tuple[tuple[Any, Any], ...], list[tuple[Any, Any]], Sequence[tuple[Any, Any]], map],
+    value: Union[
+        dict,
+        tuple[tuple[Any, Any], ...],
+        list[tuple[Any, Any]],
+        list[list],
+        Sequence[list],
+        Sequence[tuple[Any, Any]],
+        map,
+    ],
     transform: Optional[Union[tuple, list[Any]]] = None,
 ) -> dict:
     if not transform:
@@ -307,7 +325,7 @@ def multisplit(
     separators: Union[
         str, list[Union[str, list[str], tuple[str]]], tuple[Union[str, list[str], tuple[str]], ...]
     ] = " ",
-) -> Union[list[str], list[Union[list[str], list[Union[list[str], list[Union[list[str], list[Any]]]]]]]]:
+) -> list[Any]:
     result = [value]
     if isinstance(separators, str):
         separators = [separators]
