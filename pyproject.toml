@@ -54,6 +54,7 @@ ignore = [
     "UP007", # union type annotations
     "T201", # print
     "B007", # unused variable within loop
+    "B023", # loop variable
 ]
 src = [
     "*.py",

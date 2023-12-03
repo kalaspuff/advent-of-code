@@ -1,7 +1,8 @@
 # note: code may have been written in a rush, here be dragons and lots of bad patterns to avoid.
+from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, Optional
 
 FILL_SENTINEL = object()
 VALUE_SENTINEL = object()
@@ -63,28 +64,28 @@ class Matrix:
         return self._coordinates
 
     @property
-    def width(self):
+    def width(self) -> int:
         return len(self.rows[0]) if self.rows else 0
 
     @property
-    def height(self):
+    def height(self) -> int:
         return len(self.rows) if self.rows else 0
 
     @property
-    def min_x(self):
-        return 0 if self.rows else False
+    def min_x(self) -> int:
+        return 0 if self.rows else 0
 
     @property
-    def min_y(self):
-        return 0 if self.rows else False
+    def min_y(self) -> int:
+        return 0 if self.rows else 0
 
     @property
-    def max_x(self):
-        return (self.width - 1) if self.rows else False
+    def max_x(self) -> int:
+        return (self.width - 1) if self.rows else 0
 
     @property
-    def max_y(self):
-        return (self.height - 1) if self.rows else False
+    def max_y(self) -> int:
+        return (self.height - 1) if self.rows else 0
 
     def y(self, value, to_value=None):
         if to_value is None:
@@ -126,22 +127,22 @@ class Matrix:
     def yx2yx(self, y1, x1, y2, x2):
         return self.yxyx(y1, x1, y2, x2)
 
-    def as_str(self):
+    def as_str(self) -> str:
         result = ""
         for row in self.rows:
             result += f"{row}\n"
         return result
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.as_str()
 
-    def draw(self):
+    def draw(self) -> None:
         print(self.as_str())
 
-    def print(self):
+    def print(self) -> None:
         print(self.as_str())
 
-    def pos(self, char, start_pos=None):
+    def pos(self, char, start_pos=None) -> list[tuple[int, int]]:
         x_index = 0 if start_pos is None else start_pos[0]
         positions = []
         for y, row in enumerate(self.rows):
@@ -160,7 +161,7 @@ class Matrix:
 
         return positions
 
-    def pos_first(self, char, start_pos=None):
+    def pos_first(self, char, start_pos=None) -> Optional[tuple[int, int]]:
         x_index = 0 if start_pos is None else start_pos[0]
         for y, row in enumerate(self.rows):
             if start_pos is not None and start_pos[1] > y:
@@ -170,33 +171,33 @@ class Matrix:
             x = row.index(char, x_index)
             return (x, y)
 
-        return False
+        return None
 
-    def pos_all(self, char, start_pos=None):
+    def pos_all(self, char, start_pos=None) -> list[tuple[int, int]]:
         return self.pos(char, start_pos)
 
-    def pos_one(self, char, start_pos=None):
+    def pos_one(self, char, start_pos=None) -> Optional[tuple[int, int]]:
         return self.pos_first(char, start_pos)
 
-    def pos_1(self, char, start_pos=None):
+    def pos_1(self, char, start_pos=None) -> Optional[tuple[int, int]]:
         return self.pos_first(char, start_pos)
 
-    def position(self, char, start_pos=None):
+    def position(self, char, start_pos=None) -> list[tuple[int, int]]:
         return self.pos(char, start_pos)
 
-    def position_all(self, char, start_pos=None):
+    def position_all(self, char, start_pos=None) -> list[tuple[int, int]]:
         return self.pos(char, start_pos)
 
-    def position_first(self, char, start_pos=None):
+    def position_first(self, char, start_pos=None) -> Optional[tuple[int, int]]:
         return self.pos_first(char, start_pos)
 
-    def position_one(self, char, start_pos=None):
+    def position_one(self, char, start_pos=None) -> Optional[tuple[int, int]]:
         return self.pos_first(char, start_pos)
 
-    def position_1(self, char, start_pos=None):
+    def position_1(self, char, start_pos=None) -> Optional[tuple[int, int]]:
         return self.pos_first(char, start_pos)
 
-    def index(self, char, start_pos=None):
+    def index(self, char, start_pos=None) -> Optional[tuple[int, int]]:
         return self.pos_first(char, start_pos)
 
     def __getitem__(self, item):
@@ -206,7 +207,7 @@ class Matrix:
         return self.set(item, value)
 
     @property
-    def flip(self):
+    def flip(self) -> Matrix:
         rows = []
         for x in range(0, self.max_x + 1):
             row = ""

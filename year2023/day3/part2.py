@@ -4,21 +4,14 @@ from helpers import tuple_add
 from values import values
 
 
-def extract_full_number(pos):
-    row = values.matrix.y(pos[1])
-    boundary = [pos] * 2
-
-    for index, range_ in enumerate([range(pos[0], -1, -1), range(pos[0], row.width, 1)]):
-        for x in range_:
-            if not str(row.x(x)).isdigit():
-                break
-            boundary[index] = (x, pos[1])
-
-    number = int(str(row.x(boundary[0][0], boundary[1][0])))
-    return tuple(boundary), number
+def extract_full_number(pos: tuple[int, int]) -> tuple[tuple[int, int], int]:
+    row = str(values.matrix.y(pos[1]))
+    begin = list(itertools.takewhile(str.isdigit, row[pos[0] - 1 :: -1]))[::-1]
+    end = list(itertools.takewhile(str.isdigit, row[pos[0] :: 1]))
+    return (pos[0] - len(begin), pos[1]), int("".join(begin + end))
 
 
-def extract_adjacent_numbers(pos):
+def extract_adjacent_numbers(pos: tuple[int, int]) -> set[tuple[tuple[int, int], int]]:
     numbers = set()
     for mod in itertools.product([-1, 0, 1], [-1, 0, 1]):
         search_pos = tuple_add(pos, mod)
@@ -27,7 +20,7 @@ def extract_adjacent_numbers(pos):
     return numbers
 
 
-async def run():
+async def run() -> int:
     result = 0
 
     for pos in values.matrix.pos("*"):

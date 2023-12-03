@@ -70,27 +70,87 @@ def int_rows(value: Sequence) -> List[int]:
     return int_list(value)
 
 
+@overload
+def tuple_sum(*values: tuple[int, int]) -> tuple[int, int]:
+    ...
+
+
+@overload
 def tuple_sum(*values: tuple[int, ...]) -> tuple[int, ...]:
-    result: List[int] = []
+    ...
+
+
+@overload
+def tuple_sum(*values: T) -> T:
+    ...
+
+
+def tuple_sum(*values: T) -> T:
+    result: list[int] = []
 
     for value in values:
-        for i, v in enumerate(value):
+        for i, v in enumerate(cast(Iterable, value)):
             if len(result) <= i:
                 result.append(0)
             result[i] += v
 
-    return tuple(result)
+    return cast(T, tuple(result))
 
 
+@overload
+def tuple_negative(value: tuple[int, int]) -> tuple[int, int]:
+    ...
+
+
+@overload
 def tuple_negative(value: tuple[int, ...]) -> tuple[int, ...]:
-    return tuple(-v for v in value)
+    ...
 
 
+@overload
+def tuple_negative(value: T) -> T:
+    ...
+
+
+def tuple_negative(value: T) -> T:
+    return cast(T, tuple(-v for v in cast(Iterable, value)))
+
+
+@overload
+def tuple_add(value: tuple[int, int], mod: tuple[int, int]) -> tuple[int, int]:
+    ...
+
+
+@overload
 def tuple_add(value: tuple[int, ...], mod: tuple[int, ...]) -> tuple[int, ...]:
-    return tuple_sum(value, mod)
+    ...
 
 
+@overload
+def tuple_add(value: T, mod: T) -> T:
+    ...
+
+
+def tuple_add(value: T, mod: T) -> T:
+    return cast(T, tuple_sum(value, mod))
+
+
+@overload
+def tuple_sub(value: tuple[int, int], mod: tuple[int, int]) -> tuple[int, int]:
+    ...
+
+
+@overload
 def tuple_sub(value: tuple[int, ...], mod: tuple[int, ...]) -> tuple[int, ...]:
+    ...
+
+
+@overload
+def tuple_sub(value: T, mod: T) -> T:
+    ...
+
+
+def tuple_sub(value: T, mod: T) -> T:
     return tuple_sum(value, tuple_negative(mod))
 
 
