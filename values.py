@@ -1,20 +1,16 @@
+# note: code may have been written in a rush, here be dragons and lots of bad patterns to avoid.
+
 from __future__ import annotations
 
-import re
 from typing import (
     Any,
     Callable,
-    Generic,
-    GenericAlias,
     Iterable,
     List,
     Optional,
     ParamSpec,
-    Protocol,
     TypeVar,
-    TypeVarTuple,
     Union,
-    Unpack,
     overload,
 )
 
@@ -28,9 +24,6 @@ T3 = TypeVar("T3")
 T4 = TypeVar("T4")
 T5 = TypeVar("T5")
 T6 = TypeVar("T6")
-
-Ts = TypeVarTuple("Ts")
-
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -169,7 +162,8 @@ class Values:
             ]
         ] = None,
     ) -> list[Any]:
-        return match_rows(self.rows, regexp, transform=transform)
+        transform_ = tuple(transform) if transform is not None else None
+        return match_rows(self.rows, regexp, transform=transform_)
 
     def grouped_rows(self, *, split: str = "", transform: Optional[Callable] = None) -> List[List[str]]:
         return group_rows(self.rows, split=split, transform=transform)

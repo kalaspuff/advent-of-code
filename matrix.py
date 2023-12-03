@@ -1,3 +1,5 @@
+# note: code may have been written in a rush, here be dragons and lots of bad patterns to avoid.
+
 import re
 from typing import Any
 
@@ -6,10 +8,10 @@ VALUE_SENTINEL = object()
 
 
 class Matrix:
-    _coordinates = None
+    _coordinates: dict[tuple[int, int], Any]
     _options = None
     _empty = None
-    rows = None
+    rows: list[list[Any]]
 
     def __init__(self, rows, width=None, height=None, fill=FILL_SENTINEL, *, infinite_x=None, infinite_y=None):
         if isinstance(rows, Matrix):
@@ -20,7 +22,7 @@ class Matrix:
             infinite_y = infinite_y if infinite_y is not None else bool("infinite_y" in input_matrix._options)
 
         self._coordinates = {}
-        self.rows = (rows if isinstance(rows, (list, tuple)) else rows.split("\n")) if rows else []
+        self.rows = (list(rows) if isinstance(rows, (list, tuple)) else rows.split("\n")) if rows else []
         self._options = set()
         self._fill = " " if fill is FILL_SENTINEL else fill
 

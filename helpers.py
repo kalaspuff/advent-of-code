@@ -1,3 +1,5 @@
+# note: code may have been written in a rush, here be dragons and lots of bad patterns to avoid.
+
 import functools
 import itertools
 import re

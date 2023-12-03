@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# note: code may have been written in a rush, here be dragons and lots of bad patterns to avoid.
+
 import asyncio
 import decimal
 import importlib
