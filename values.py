@@ -1,8 +1,54 @@
+from __future__ import annotations
+
 import re
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    GenericAlias,
+    Iterable,
+    List,
+    Optional,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    TypeVarTuple,
+    Union,
+    Unpack,
+    overload,
+)
 
 from helpers import group_rows, match_rows
 from matrix import Matrix
+
+T = TypeVar("T")
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+T3 = TypeVar("T3")
+T4 = TypeVar("T4")
+T5 = TypeVar("T5")
+T6 = TypeVar("T6")
+
+Ts = TypeVarTuple("Ts")
+
+
+P = ParamSpec("P")
+R = TypeVar("R")
+C = TypeVar("C", bound=Callable)
+
+# CallableTuple = tuple[Callable[..., T], ...]
+
+
+# class GenericAlias_(GenericAlias):
+#     pass
+
+
+# class CallableT(Protocol[C]):
+#     def __class_getitem__(cls, item: Callable[P, T]):
+#         return GenericAlias_(cls, item)
+#
+#     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+#         return self.__orig_class__.__args__[0]
 
 
 class Values:
@@ -31,10 +77,98 @@ class Values:
     def split(self, split_value: str) -> List[str]:
         return self.input_.split(split_value)
 
-    def match(self, regexp: str, transform: Optional[Union[Tuple[Any, ...], List[Any]]] = None) -> Any:
+    def match(self, regexp: str, transform: Optional[Union[tuple[Any, ...], List[Any]]] = None) -> Any:
         return match_rows([self.input_], regexp, transform=transform)[0]
 
-    def match_rows(self, regexp: str, transform: Optional[Union[Tuple[Any, ...], List[Any]]] = None) -> Any:
+    @overload
+    def match_rows(self, regexp: str, transform: tuple[Callable[..., T1]]) -> list[tuple[T1]]:
+        ...
+
+    @overload
+    def match_rows(self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2]]) -> list[tuple[T1, T2]]:
+        ...
+
+    @overload
+    def match_rows(
+        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3]]
+    ) -> list[tuple[T1, T2, T3]]:
+        ...
+
+    @overload
+    def match_rows(
+        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4]]
+    ) -> list[tuple[T1, T2, T3, T4]]:
+        ...
+
+    @overload
+    def match_rows(
+        self,
+        regexp: str,
+        transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4], Callable[..., T5]],
+    ) -> list[tuple[T1, T2, T3, T4, T5]]:
+        ...
+
+    @overload
+    def match_rows(
+        self,
+        regexp: str,
+        transform: tuple[
+            Callable[..., T1],
+            Callable[..., T2],
+            Callable[..., T3],
+            Callable[..., T4],
+            Callable[..., T5],
+            Callable[..., T6],
+        ],
+    ) -> list[tuple[T1, T2, T3, T4, T5, T6]]:
+        ...
+
+    # @overload
+    # def match_rows(self, regexp: str, transform: tuple[Callable[..., Any], ...]) -> list[tuple[Any]]:
+    #    ...
+
+    @overload
+    def match_rows(self, regexp: str, transform: list[Callable[..., T]]) -> list[tuple[T, ...]]:
+        ...
+
+    # @overload
+    # def match_rows(
+    #     self,
+    #     regexp: str,
+    #     transform: CallableTuple[Any],
+    # ) -> list[Iterable[*Ts]]:
+    #     ...
+
+    @overload
+    def match_rows(self, regexp: str, transform: None) -> list[tuple[Any, ...]]:
+        ...
+
+    def match_rows(
+        self,
+        regexp: str,
+        transform: Optional[
+            Union[
+                tuple[Callable[..., Any]],
+                tuple[Callable[..., Any], Callable[..., Any]],
+                tuple[Callable[..., Any], Callable[..., Any], Callable[..., Any]],
+                tuple[Callable[..., Any], Callable[..., Any], Callable[..., Any], Callable[..., Any]],
+                tuple[
+                    Callable[..., Any], Callable[..., Any], Callable[..., Any], Callable[..., Any], Callable[..., Any]
+                ],
+                tuple[
+                    Callable[..., Any],
+                    Callable[..., Any],
+                    Callable[..., Any],
+                    Callable[..., Any],
+                    Callable[..., Any],
+                    Callable[..., Any],
+                ],
+                tuple[Callable[..., Any], ...],
+                Iterable[Callable[..., Any]],
+                list[Callable[..., Any]],
+            ]
+        ] = None,
+    ) -> list[Any]:
         return match_rows(self.rows, regexp, transform=transform)
 
     def grouped_rows(self, *, split: str = "", transform: Optional[Callable] = None) -> List[List[str]]:
@@ -96,6 +230,12 @@ class Values:
         if getattr(self, "_matrix", None) is None:
             self._matrix = Matrix(self.rows)
         return self._matrix
+
+    @property
+    def input_basename(self) -> str:
+        import os
+
+        return os.path.basename(self.input_filename)
 
 
 values = Values()
