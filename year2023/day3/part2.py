@@ -1,19 +1,39 @@
-import functools
 import itertools
-import math
-import re
 
-import helpers
-from helpers import inverse, inverse_dict, manhattan_distance, multisplit, paired, transform, transform_dict
-from matrix import Matrix
+from helpers import tuple_add
 from values import values
+
+
+def extract_full_number(pos):
+    row = values.matrix.y(pos[1])
+    boundary = [pos] * 2
+
+    for index, range_ in enumerate([range(pos[0], -1, -1), range(pos[0], row.width, 1)]):
+        for x in range_:
+            if not str(row.x(x)).isdigit():
+                break
+            boundary[index] = (x, pos[1])
+
+    number = int(str(row.x(boundary[0][0], boundary[1][0])))
+    return tuple(boundary), number
+
+
+def extract_adjacent_numbers(pos):
+    numbers = set()
+    for mod in itertools.product([-1, 0, 1], [-1, 0, 1]):
+        search_pos = tuple_add(pos, mod)
+        if str(values.matrix.xy(*search_pos)).isdigit():
+            numbers.add(extract_full_number(search_pos))
+    return numbers
 
 
 async def run():
     result = 0
 
-    for row in values.rows:
-        pass
+    for pos in values.matrix.pos("*"):
+        extracted_numbers = extract_adjacent_numbers(pos)
+        if len(extracted_numbers) == 2:
+            result += extracted_numbers.pop()[1] * extracted_numbers.pop()[1]
 
     return result
 
@@ -23,4 +43,4 @@ async def run():
 # [values.part]            (number)  2
 # [values.input_filename]  (str)     ./year2023/day3/input
 #
-# Result: ...
+# Result: 84900879

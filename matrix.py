@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 FILL_SENTINEL = object()
 VALUE_SENTINEL = object()
@@ -51,7 +52,7 @@ class Matrix:
         return Matrix(self, infinite_x=infinite_x, infinite_y=infinite_y)
 
     @property
-    def coordinates(self):
+    def coordinates(self) -> dict[tuple[int, int], Any]:
         if self._coordinates:
             return self._coordinates
         for y, row in enumerate(self.rows):
