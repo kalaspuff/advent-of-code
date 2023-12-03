@@ -4,7 +4,7 @@ import math
 import re
 
 import helpers
-from helpers import inverse, inverse_dict, manhattan_distance, multisplit, transform, transform_dict
+from helpers import inverse, inverse_dict, manhattan_distance, multisplit, transform, transform_dict, tuple_add
 from matrix import Matrix
 from values import values
 
