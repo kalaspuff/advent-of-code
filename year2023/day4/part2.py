@@ -1,5 +1,3 @@
-from collections import deque
-
 from values import values
 
 
@@ -9,17 +7,16 @@ async def run():
 
     parse_numbers = lambda n: set(map(int, n.split()))
     for index, (winning_numbers, my_numbers) in enumerate(
-        values.findall_rows(r"[:|]\s+((?:\d+\s*)+)", transform=(parse_numbers, parse_numbers))
+        values.findall_rows(r"[:|]\s+((?:\d+\s*)+)", transform=parse_numbers)
     ):
         matches = len(winning_numbers & my_numbers)
         originals.append((index, matches))
 
-    cards = deque(originals)
+    cards = originals[:]
     while cards:
-        index, matches = cards.popleft()
+        index, matches = cards.pop()
         result += 1
-        for details in originals[index + 1 : index + 1 + matches]:
-            cards.append(details)
+        cards.extend(originals[index + 1 : index + 1 + matches])
 
     return result
 

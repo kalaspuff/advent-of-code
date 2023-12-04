@@ -5,9 +5,7 @@ async def run():
     result = 0
 
     parse_numbers = lambda n: set(map(int, n.split()))
-    for winning_numbers, my_numbers in values.findall_rows(
-        r"[:|]\s+((?:\d+\s*)+)", transform=(parse_numbers, parse_numbers)
-    ):
+    for winning_numbers, my_numbers in values.findall_rows(r"[:|]\s+((?:\d+\s*)+)", transform=parse_numbers):
         matches = len(winning_numbers & my_numbers)
         if matches:
             result += 2 ** (matches - 1)
