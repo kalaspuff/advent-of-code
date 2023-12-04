@@ -3,20 +3,8 @@
 import functools
 import itertools
 import re
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    Sequence,
-    TypeVar,
-    Union,
-    cast,
-    overload,
-)
+from collections import deque
+from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, TypeVar, Union, cast, overload
 
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
@@ -408,6 +396,7 @@ def transform_tuple(
     value: Union[
         list,
         tuple,
+        deque,
         map,
     ],
     transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
@@ -427,10 +416,26 @@ def transform_tuple(
     )
 
 
+def transform_deque(
+    value: Union[
+        list,
+        tuple,
+        deque,
+        map,
+    ],
+    transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
+) -> deque:
+    result = transform_list(value, transform=transform)
+    if isinstance(value, deque) and value.maxlen:
+        return deque(result, maxlen=value.maxlen)
+    return deque(result)
+
+
 def transform_list(
     value: Union[
         list,
         tuple,
+        deque,
         map,
     ],
     transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
@@ -471,6 +476,8 @@ def transform(value: Any, transform: Optional[Union[tuple[Any, ...], list[Any], 
         return transform_list(value, transform=transform)
     if isinstance(value, tuple):
         return transform_tuple(value, transform=transform)
+    if isinstance(value, deque):
+        return transform_deque(value, transform=transform)
     if isinstance(value, dict):
         return transform_dict(value, transform=transform)
     raise NotImplementedError
