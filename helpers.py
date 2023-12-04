@@ -195,7 +195,9 @@ def split_to_dict(
     return result
 
 
-def match_rows(rows: List[str], regexp: str, transform: Optional[Union[tuple[Any, ...], List[Any]]] = None) -> Any:
+def match_rows(
+    rows: List[str], regexp: str, transform: Optional[Union[tuple[Any, ...], List[Any], Callable[..., Any]]] = None
+) -> Any:
     if not transform:
         transform = ()
     transform_all = str
@@ -211,6 +213,25 @@ def match_rows(rows: List[str], regexp: str, transform: Optional[Union[tuple[Any
                 if re.match(regexp, row) is not None
                 else ()
             )
+        )
+        for row in rows
+    ]  # type: ignore
+
+
+def findall_rows(
+    rows: List[str], regexp: str, transform: Optional[Union[tuple[Any, ...], List[Any], Callable[..., Any]]] = None
+) -> Any:
+    if not transform:
+        transform = ()
+    transform_all = str
+    if not isinstance(transform, (tuple, list)):
+        transform_all = transform
+        transform = ()
+
+    return [
+        (
+            transform_all(v) if len(transform) <= i else transform[i](v)
+            for i, v in (enumerate(re.findall(regexp, row)) if re.findall(regexp, row) is not None else ())
         )
         for row in rows
     ]  # type: ignore
@@ -247,7 +268,7 @@ def inverse_dict(
         Sequence[tuple[Any, Any]],
         map,
     ],
-    transform: Optional[Union[tuple, list[Any]]] = None,
+    transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
 ) -> dict:
     if not transform:
         transform = ()
@@ -267,7 +288,8 @@ def inverse_dict(
 
 
 def inverse_tuple(
-    value: Union[tuple[Any, Any], list[Any], Sequence[Any], map], transform: Optional[Union[tuple, list[Any]]] = None
+    value: Union[tuple[Any, Any], list[Any], Sequence[Any], map],
+    transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
 ) -> tuple[Any, Any]:
     if not transform:
         transform = ()
@@ -293,7 +315,7 @@ def inverse_pairs(
         Sequence[tuple[Any, Any]],
         map,
     ],
-    transform: Optional[Union[tuple, list[Any]]] = None,
+    transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
 ) -> Union[list[tuple[Any, Any]], list[list], tuple[tuple[Any, Any], ...], tuple[list, ...]]:
     if not transform:
         transform = ()
@@ -324,12 +346,12 @@ def inverse_list(
         Sequence[tuple[Any, Any]],
         map,
     ],
-    transform: Optional[Union[tuple, list[Any]]] = None,
+    transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
 ) -> Union[list[tuple[Any, Any]], list[list]]:
     return cast(Union[list[tuple[Any, Any]], list[list]], list(inverse_pairs(value, transform=transform)))
 
 
-def inverse(value: Any, transform: Optional[Union[tuple, list[Any]]] = None) -> Any:
+def inverse(value: Any, transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None) -> Any:
     if not transform:
         transform = ()
 
@@ -345,11 +367,11 @@ def inverse(value: Any, transform: Optional[Union[tuple, list[Any]]] = None) -> 
     raise NotImplementedError
 
 
-def flip(value: Any, transform: Optional[Union[tuple, list[Any]]] = None) -> Any:
+def flip(value: Any, transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None) -> Any:
     return inverse(value, transform=transform)
 
 
-def swap(value: Any, transform: Optional[Union[tuple, list[Any]]] = None) -> Any:
+def swap(value: Any, transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None) -> Any:
     return inverse(value, transform=transform)
 
 
@@ -363,7 +385,7 @@ def transform_dict(
         Sequence[tuple[Any, Any]],
         map,
     ],
-    transform: Optional[Union[tuple, list[Any]]] = None,
+    transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
 ) -> dict:
     if not transform:
         transform = ()
@@ -388,7 +410,7 @@ def transform_tuple(
         tuple,
         map,
     ],
-    transform: Optional[Union[tuple, list[Any]]] = None,
+    transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
 ) -> tuple:
     if not transform:
         transform = ()
@@ -411,7 +433,7 @@ def transform_list(
         tuple,
         map,
     ],
-    transform: Optional[Union[tuple, list[Any]]] = None,
+    transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
 ) -> list:
     if not transform:
         transform = ()
@@ -438,7 +460,7 @@ def transform_list(
     ]
 
 
-def transform(value: Any, transform: Optional[Union[tuple[Any, ...], list[Any]]] = None) -> Any:
+def transform(value: Any, transform: Optional[Union[tuple[Any, ...], list[Any], Callable[..., Any]]] = None) -> Any:
     if not transform:
         transform = ()
 

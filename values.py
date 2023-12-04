@@ -14,7 +14,7 @@ from typing import (
     overload,
 )
 
-from helpers import group_rows, match_rows
+from helpers import findall_rows, group_rows, match_rows
 from matrix import Matrix
 
 T = TypeVar("T")
@@ -116,21 +116,33 @@ class Values:
     ) -> list[tuple[T1, T2, T3, T4, T5, T6]]:
         ...
 
-    # @overload
-    # def match_rows(self, regexp: str, transform: tuple[Callable[..., Any], ...]) -> list[tuple[Any]]:
-    #    ...
+    @overload
+    def match_rows(
+        self,
+        regexp: str,
+        transform: tuple[
+            Callable[..., T],
+            Callable[..., T],
+            Callable[..., T],
+            Callable[..., T],
+            Callable[..., T],
+            Callable[..., T],
+            *tuple[Callable[..., T], ...],
+        ],
+    ) -> list[tuple[T, ...]]:
+        ...
+
+    @overload
+    def match_rows(
+        self,
+        regexp: str,
+        transform: Callable[..., T],
+    ) -> list[tuple[T, ...]]:
+        ...
 
     @overload
     def match_rows(self, regexp: str, transform: list[Callable[..., T]]) -> list[tuple[T, ...]]:
         ...
-
-    # @overload
-    # def match_rows(
-    #     self,
-    #     regexp: str,
-    #     transform: CallableTuple[Any],
-    # ) -> list[Iterable[*Ts]]:
-    #     ...
 
     @overload
     def match_rows(self, regexp: str, transform: None) -> list[tuple[Any, ...]]:
@@ -157,13 +169,119 @@ class Values:
                     Callable[..., Any],
                 ],
                 tuple[Callable[..., Any], ...],
+                Callable[..., T],
                 Iterable[Callable[..., Any]],
                 list[Callable[..., Any]],
             ]
         ] = None,
     ) -> list[Any]:
-        transform_ = tuple(transform) if transform is not None else None
+        transform_ = tuple(transform) if isinstance(transform, (tuple, list, Iterable)) else transform
         return match_rows(self.rows, regexp, transform=transform_)
+
+    @overload
+    def findall_rows(self, regexp: str, transform: tuple[Callable[..., T1]]) -> list[tuple[T1]]:
+        ...
+
+    @overload
+    def findall_rows(self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2]]) -> list[tuple[T1, T2]]:
+        ...
+
+    @overload
+    def findall_rows(
+        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3]]
+    ) -> list[tuple[T1, T2, T3]]:
+        ...
+
+    @overload
+    def findall_rows(
+        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4]]
+    ) -> list[tuple[T1, T2, T3, T4]]:
+        ...
+
+    @overload
+    def findall_rows(
+        self,
+        regexp: str,
+        transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4], Callable[..., T5]],
+    ) -> list[tuple[T1, T2, T3, T4, T5]]:
+        ...
+
+    @overload
+    def findall_rows(
+        self,
+        regexp: str,
+        transform: tuple[
+            Callable[..., T1],
+            Callable[..., T2],
+            Callable[..., T3],
+            Callable[..., T4],
+            Callable[..., T5],
+            Callable[..., T6],
+        ],
+    ) -> list[tuple[T1, T2, T3, T4, T5, T6]]:
+        ...
+
+    @overload
+    def findall_rows(
+        self,
+        regexp: str,
+        transform: tuple[
+            Callable[..., T],
+            Callable[..., T],
+            Callable[..., T],
+            Callable[..., T],
+            Callable[..., T],
+            Callable[..., T],
+            *tuple[Callable[..., T], ...],
+        ],
+    ) -> list[tuple[T, ...]]:
+        ...
+
+    @overload
+    def findall_rows(
+        self,
+        regexp: str,
+        transform: Callable[..., T],
+    ) -> list[tuple[T, ...]]:
+        ...
+
+    @overload
+    def findall_rows(self, regexp: str, transform: list[Callable[..., T]]) -> list[tuple[T, ...]]:
+        ...
+
+    @overload
+    def findall_rows(self, regexp: str, transform: None) -> list[tuple[Any, ...]]:
+        ...
+
+    def findall_rows(
+        self,
+        regexp: str,
+        transform: Optional[
+            Union[
+                tuple[Callable[..., Any]],
+                tuple[Callable[..., Any], Callable[..., Any]],
+                tuple[Callable[..., Any], Callable[..., Any], Callable[..., Any]],
+                tuple[Callable[..., Any], Callable[..., Any], Callable[..., Any], Callable[..., Any]],
+                tuple[
+                    Callable[..., Any], Callable[..., Any], Callable[..., Any], Callable[..., Any], Callable[..., Any]
+                ],
+                tuple[
+                    Callable[..., Any],
+                    Callable[..., Any],
+                    Callable[..., Any],
+                    Callable[..., Any],
+                    Callable[..., Any],
+                    Callable[..., Any],
+                ],
+                tuple[Callable[..., Any], ...],
+                Callable[..., T],
+                Iterable[Callable[..., Any]],
+                list[Callable[..., Any]],
+            ]
+        ] = None,
+    ) -> list[Any]:
+        transform_ = tuple(transform) if isinstance(transform, (tuple, list, Iterable)) else transform
+        return findall_rows(self.rows, regexp, transform=transform_)
 
     def grouped_rows(self, *, split: str = "", transform: Optional[Callable] = None) -> List[List[str]]:
         return group_rows(self.rows, split=split, transform=transform)
