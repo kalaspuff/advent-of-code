@@ -2,6 +2,7 @@ import functools
 import itertools
 import math
 import re
+from collections import deque
 
 import helpers
 from helpers import inverse, inverse_dict, manhattan_distance, multisplit, transform, transform_dict, tuple_add
