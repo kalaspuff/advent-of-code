@@ -1,37 +1,27 @@
-import functools
-import itertools
-import math
-import re
-from collections import deque
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, TypeVar, Union
-
-import helpers
-from helpers import (
-    inverse,
-    inverse_dict,
-    manhattan_distance,
-    multisplit,
-    transform,
-    transform_dict,
-    transform_tuple,
-    tuple_add,
-)
-from matrix import Matrix
 from values import values
 
 
-async def run():
-    result = 0
+async def run() -> int:
+    result = 1
 
-    for row in values.rows:
-        pass
+    time = int("".join(values.rows[0].split()[1:]))
+    record = int("".join(values.rows[1].split()[1:]))
+
+    ways_to_win = 0
+    for hold_time in range(time):
+        speed = hold_time
+        travel_time = time - hold_time
+        distance = speed * travel_time
+        if distance > record:
+            ways_to_win += 1
+    result *= ways_to_win
 
     return result
 
 
 # [values.year]            (number)  2023
-# [values.day]             (number)  0
+# [values.day]             (number)  6
 # [values.part]            (number)  2
-# [values.input_filename]  (str)     ./year2023/day0/input
+# [values.input_filename]  (str)     ./year2023/day6/input
 #
-# Result: ...
+# Result: 34655848
