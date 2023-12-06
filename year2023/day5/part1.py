@@ -2,15 +2,15 @@ from helpers import transform_tuple
 from values import values
 
 
-async def run():
-    seeds = transform_tuple(values.rows[0].split()[1:], int)
+async def run() -> int:
+    seeds: tuple[int, ...] = transform_tuple(values.rows[0].split()[1:], int)
 
-    maps = []
+    maps: list[list[tuple[int, int, int]]] = []
     for row in values.rows[1:]:
         if row.endswith("map:"):
             maps.append([])
         elif row:
-            map_entry = transform_tuple(row.split(), (int, int, int))
+            map_entry: tuple[int, int, int] = transform_tuple(row.split(), (int, int, int))
             maps[-1].append(map_entry)
 
     location = float("inf")

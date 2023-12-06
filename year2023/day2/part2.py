@@ -2,7 +2,7 @@ from helpers import inverse_dict, multisplit
 from values import values
 
 
-async def run():
+async def run() -> int:
     result = 0
 
     for _, record in values.match_rows(r"^Game (\d+): (.*)$", transform=(int, str)):

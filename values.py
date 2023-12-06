@@ -2,17 +2,8 @@
 
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Callable,
-    Iterable,
-    List,
-    Optional,
-    ParamSpec,
-    TypeVar,
-    Union,
-    overload,
-)
+from types import GenericAlias as _GenericAlias
+from typing import Any, Callable, Generic, Iterable, List, Optional, ParamSpec, Protocol, TypeVar, Union, cast, overload
 
 from helpers import findall_rows, group_rows, match_rows
 from matrix import Matrix
@@ -27,21 +18,98 @@ T6 = TypeVar("T6")
 
 P = ParamSpec("P")
 R = TypeVar("R")
+R_co = TypeVar("R_co", covariant=True)
 C = TypeVar("C", bound=Callable)
+C_co = TypeVar("C_co", bound=Callable, covariant=True)
 
 # CallableTuple = tuple[Callable[..., T], ...]
 
 
-# class GenericAlias_(GenericAlias):
-#     pass
+class GenericAlias(Protocol[C_co]):
+    def __class_getitem__(cls, item: Union[R, tuple[R, ...]]) -> CallableT[R]:
+        print("CLS", cls, item)
+        if not isinstance(item, tuple):
+            item = (item,)
+        # return CallableT()
+        result = type(
+            f"CallableT{item}",
+            (cls,),
+            {
+                "__args__": item,
+                "__qualname__": f'CallableT[{", ".join(arg.__name__ for arg in item)}]',
+                "__module__": "values",
+                "__repr__": lambda self: f"CallableT{item}",
+            },
+        )
+        print(result)
+        return result
+        # return cast(Callable[..., R], type(f"CallableT{return_type}", (cls,), {"__args__": return_type}))
+
+    def __repr__(self):
+        return f'CallableT[{", ".join(arg.__name__ for arg in self.__args__)}]'
+
+    def __str__(self):
+        return f'CallableT[{", ".join(arg.__name__ for arg in self.__args__)}]'
 
 
-# class CallableT(Protocol[C]):
+# class CallableT:
+#     def __getitem__(self, item: Callable[P, T]) -> GenericAlias[Callable, P, T]:
+#         ...
+#
 #     def __class_getitem__(cls, item: Callable[P, T]):
-#         return GenericAlias_(cls, item)
+#         return GenericAlias(cls, item)
 #
 #     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
-#         return self.__orig_class__.__args__[0]
+#         return self.__orig_class__.__args__[0]  # type: ignore[attr-defined]
+
+
+from abc import ABCMeta, abstractmethod
+from typing import Any, Callable, Tuple, Type, TypeVar
+
+# class CallableTMeta(ABCMeta):
+#    def __getitem__(cls, item) -> CallableT:
+#        return type("CallableT", (CallableT,), {"__return_type__": item})
+
+
+# class CallableTMeta(GenericAlias):
+#    def __getitem__(cls, item):
+#        return type(f"CallableT[{item.__name__}]", (cls,), {"__return_type__": item})
+
+
+class CallableTMeta(ABCMeta):
+    def __getitem__(cls, return_type):
+        if not isinstance(return_type, tuple):
+            return_type = (return_type,)
+        return type(f"CallableT{return_type}", (cls,), {"__args__": return_type})
+
+
+# Define the CallableT class with Generic
+class CallableT(GenericAlias[Callable[P, R]], metaclass=type):
+    __args__: R
+    # __return_type__: type[R]
+
+    # def __repr__(self) -> str:
+    #    return f"CallableT[{self.__return_type__.__name__}]"
+    #    # return "CallableT"
+
+    def __repr__(self):
+        return f'CallableT[{", ".join(arg.__name__ for arg in self.__args__)}]'
+
+    def __str__(self):
+        return f'CallableT[{", ".join(arg.__name__ for arg in self.__args__)}]'
+
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
+        return self.__orig_class__.__args__[0]  # type: ignore[attr-defined]
+
+    # @abstractmethod
+    # def __call__(self, *args, **kwargs) -> T:
+    #     raise NotImplementedError
+
+    # # def __class_getitem__(cls, item: Union[R, tuple[R, ...]]) -> CallableT[P, R]:
+    #     return super().__class_getitem__(item)
+
+
+typ = CallableT[int]
 
 
 class Values:

@@ -57,6 +57,7 @@ ignore = [
     "B023", # loop variable
     "UP038", # union type annotations
     "E731", # lambda
+    "PLR2004", # magic-value-comparison
 ]
 src = [
     "*.py",

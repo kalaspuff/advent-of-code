@@ -2,7 +2,7 @@ from helpers import inverse_dict, multisplit
 from values import values
 
 
-async def run():
+async def run() -> int:
     result = 0
     max_cubes = {"red": 12, "green": 13, "blue": 14}
 

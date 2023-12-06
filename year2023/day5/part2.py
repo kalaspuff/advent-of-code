@@ -2,18 +2,20 @@ from helpers import transform_tuple
 from values import values
 
 
-async def run():
-    seeds = transform_tuple(values.rows[0].split()[1:], int)
-    initial_seed_ranges = set([(seeds[i], seeds[i + 1], 0) for i in range(0, len(seeds), 2)])
-    maps = []
+async def run() -> int:
+    seed_values: tuple[int, ...] = transform_tuple(values.rows[0].split()[1:], int)
+    seed_ranges: set[tuple[int, int, int]] = {
+        (seed_values[i], seed_values[i + 1], 0) for i in range(0, len(seed_values), 2)
+    }
+
+    maps: list[list[tuple[int, int, int]]] = []
     for row in values.rows[1:]:
         if row.endswith("map:"):
             maps.append([])
         elif row:
-            map_entry = transform_tuple(row.split(), (int, int, int))
+            map_entry: tuple[int, int, int] = transform_tuple(row.split(), (int, int, int))
             maps[-1].append(map_entry)
 
-    seed_ranges = initial_seed_ranges.copy()
     for map_ in maps:
         updated_ranges = set()
         while seed_ranges:

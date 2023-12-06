@@ -1,7 +1,7 @@
 from values import values
 
 
-async def run():
+async def run() -> int:
     result = 0
     word_to_num = {
         "one": "1",

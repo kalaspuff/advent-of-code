@@ -1,7 +1,7 @@
 from values import values
 
 
-async def run():
+async def run() -> int:
     result = 0
 
     parse_numbers = lambda n: set(map(int, n.split()))
