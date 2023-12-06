@@ -26,8 +26,7 @@ C_co = TypeVar("C_co", bound=Callable, covariant=True)
 
 
 class GenericAlias(Protocol[C_co]):
-    def __class_getitem__(cls, item: Union[R, tuple[R, ...]]) -> CallableT[R]:
-        print("CLS", cls, item)
+    def __class_getitem__(cls, item: Union[R, tuple[R, ...]]) -> type[CallableT[R]]:
         if not isinstance(item, tuple):
             item = (item,)
         # return CallableT()
@@ -39,17 +38,20 @@ class GenericAlias(Protocol[C_co]):
                 "__qualname__": f'CallableT[{", ".join(arg.__name__ for arg in item)}]',
                 "__module__": "values",
                 "__repr__": lambda self: f"CallableT{item}",
+                "__func__": item,
+                "__orig_class__": cls,
             },
         )
-        print(result)
-        return result
+        return cast("type[CallableT[R]]", result)
         # return cast(Callable[..., R], type(f"CallableT{return_type}", (cls,), {"__args__": return_type}))
 
-    def __repr__(self):
-        return f'CallableT[{", ".join(arg.__name__ for arg in self.__args__)}]'
+    # def __repr__(self):
+    #     args = self.__args__ if isinstance(self.__args__, tuple) else (self.__args__,)
+    #     return f'CallableT[{", ".join(arg.__name__ for arg in args)}]'
 
-    def __str__(self):
-        return f'CallableT[{", ".join(arg.__name__ for arg in self.__args__)}]'
+    # def __str__(self):
+    #     args = self.__args__ if isinstance(self.__args__, tuple) else (self.__args__,)
+    #     return f'CallableT[{", ".join(arg.__name__ for arg in args)}]'
 
 
 # class CallableT:
@@ -84,7 +86,8 @@ class CallableTMeta(ABCMeta):
 
 
 # Define the CallableT class with Generic
-class CallableT(GenericAlias[Callable[P, R]], metaclass=type):
+class CallableT(GenericAlias[Callable[..., R]]):
+    __orig_class__: CallableT
     __args__: R
     # __return_type__: type[R]
 
@@ -93,13 +96,21 @@ class CallableT(GenericAlias[Callable[P, R]], metaclass=type):
     #    # return "CallableT"
 
     def __repr__(self):
-        return f'CallableT[{", ".join(arg.__name__ for arg in self.__args__)}]'
+        if not hasattr(self, "__args__") or not self.__args__:
+            return "CallableT"
+        args = self.__args__ if isinstance(self.__args__, tuple) else (self.__args__,)
+        return f'CallableT[{", ".join(arg.__name__ for arg in args)}]'
 
     def __str__(self):
-        return f'CallableT[{", ".join(arg.__name__ for arg in self.__args__)}]'
+        if not hasattr(self, "__args__") or not self.__args__:
+            return "CallableT"
+        args = self.__args__ if isinstance(self.__args__, tuple) else (self.__args__,)
+        return f'CallableT[{", ".join(arg.__name__ for arg in args)}]'
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
-        return self.__orig_class__.__args__[0]  # type: ignore[attr-defined]
+        # if not hasattr(self, "__args__") or not self.__args__:
+        #     return self.__orig_class__.__args__[0](*args, **kwargs)  # type: ignore[attr-defined]
+        return self.__args__[0](*args, **kwargs)  # type: ignore[attr-defined]
 
     # @abstractmethod
     # def __call__(self, *args, **kwargs) -> T:
@@ -107,9 +118,6 @@ class CallableT(GenericAlias[Callable[P, R]], metaclass=type):
 
     # # def __class_getitem__(cls, item: Union[R, tuple[R, ...]]) -> CallableT[P, R]:
     #     return super().__class_getitem__(item)
-
-
-typ = CallableT[int]
 
 
 class Values:
