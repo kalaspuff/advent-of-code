@@ -1,13 +1,168 @@
 # note: code may have been written in a rush, here be dragons and lots of bad patterns to avoid.
-
 import functools
 import itertools
 import re
-from collections import deque
-from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, TypeVar, Union, cast, overload
+from collections import Counter, deque
+from types import GenericAlias as _GenericAlias
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    ParamSpec,
+    Protocol,
+    Sequence,
+    Tuple,
+    TypeVar,
+    TypeVarTuple,
+    Union,
+    Unpack,
+    cast,
+    overload,
+)
 
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
+T_contra = TypeVar("T_contra", contravariant=True)
+
+C = TypeVar("C", bound=Callable | tuple[Callable, ...])
+C_co = TypeVar("C_co", bound=Callable, covariant=True)
+
+R = TypeVar("R")
+R_co = TypeVar("R_co", covariant=True)
+
+P = ParamSpec("P")
+
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+T3 = TypeVar("T3")
+T4 = TypeVar("T4")
+T5 = TypeVar("T5")
+T6 = TypeVar("T6")
+
+T1_co = TypeVar("T1_co", covariant=True)
+T2_co = TypeVar("T2_co", covariant=True)
+T3_co = TypeVar("T3_co", covariant=True)
+T4_co = TypeVar("T4_co", covariant=True)
+T5_co = TypeVar("T5_co", covariant=True)
+T6_co = TypeVar("T6_co", covariant=True)
+
+CT = Callable[..., T]
+
+CTT1 = tuple[CT[T1]]
+CTT2 = tuple[CT[T1], CT[T2]]
+CTT3 = tuple[CT[T1], CT[T2], CT[T3]]
+CTT4 = tuple[CT[T1], CT[T2], CT[T3], CT[T4]]
+CTT5 = tuple[CT[T1], CT[T2], CT[T3], CT[T4], CT[T5]]
+CTT6 = tuple[CT[T1], CT[T2], CT[T3], CT[T4], CT[T5], CT[T6]]
+
+TTT1 = tuple[T1]
+TTT2 = tuple[T1, T2]
+TTT3 = tuple[T1, T2, T3]
+TTT4 = tuple[T1, T2, T3, T4]
+TTT5 = tuple[T1, T2, T3, T4, T5]
+TTT6 = tuple[T1, T2, T3, T4, T5, T6]
+
+CTTT1 = CTT1[T]
+TTTT1 = TTT1[T]
+CTTT2 = CTT2[T, T]
+TTTT2 = TTT2[T, T]
+CTTT3 = CTT3[T, T, T]
+TTTT3 = TTT3[T, T, T]
+
+
+@overload
+def type_from_tuple(
+    val: tuple[
+        Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4], Callable[..., T5], Callable[..., T6]
+    ],
+) -> tuple[T1, T2, T3, T4, T5, T6]:
+    return cast(tuple[T1, T2, T3, T4, T5, T6], ...)
+
+
+@overload
+def type_from_tuple(
+    val: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4], Callable[..., T5]]
+) -> tuple[T1, T2, T3, T4, T5]:
+    return cast(tuple[T1, T2, T3, T4, T5], ...)
+
+
+@overload
+def type_from_tuple(
+    val: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4]]
+) -> tuple[T1, T2, T3, T4]:
+    return cast(tuple[T1, T2, T3, T4], ...)
+
+
+@overload
+def type_from_tuple(val: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3]]) -> tuple[T1, T2, T3]:
+    return cast(tuple[T1, T2, T3], ...)
+
+
+@overload
+def type_from_tuple(val: tuple[Callable[..., T1], Callable[..., T2]]) -> tuple[T1, T2]:
+    return cast(tuple[T1, T2], ...)
+
+
+@overload
+def type_from_tuple(val: tuple[Callable[..., T1]]) -> tuple[T1]:
+    return cast(tuple[T1], ...)
+
+
+@overload
+def type_from_tuple(val: tuple[Callable[..., T], ...]) -> tuple[T, ...]:
+    return cast(tuple[T, ...], ...)
+
+
+def type_from_tuple(val: Any) -> tuple[Any, ...]:
+    return cast(tuple[Any, ...], ...)
+
+
+class ReturnTypeMeta(Protocol[C_co]):
+    def __class_getitem__(cls, item: Callable[P, R]) -> type["ReturnType[P, R]"]:
+        def get_types(item: Callable[P, R]) -> R:
+            return cast(R, ...)
+
+        args: tuple[R] = (get_types(item),)
+        result = type(
+            f"ReturnType{item}",
+            (cls,),
+            {
+                "__args__": args,
+                "__parameters__": item,
+                "__qualname__": f"ReturnType[{args[0]}]",
+                "__module__": "helpers",
+                "__repr__": lambda self: f"ReturnType[{args[0]}]",
+                "__func__": item,
+                "__orig_class__": cls,
+            },
+        )
+        return cast(type["ReturnType[P, R]"], result)
+
+
+class ReturnType(ReturnTypeMeta[Callable[P, R]], _GenericAlias):
+    __args__: tuple[P, R]
+    __return_class__: R
+
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
+        return self.__orig_class__.__args__[0](*args, **kwargs)
+
+
+_ReturnType = ReturnType
+ReturnTypeT = Callable[..., T]
+
+
+def testfunc(arg: ReturnTypeT[T]) -> T:
+    return arg(1, 2)
+
+
+class IteratorExhaustedError(Exception):
+    result: list[Any]
 
 
 @functools.lru_cache(maxsize=128)
@@ -392,6 +547,43 @@ def transform_dict(
     }
 
 
+@overload
+def transform_tuple(
+    value,
+    transform: Callable[..., T],
+) -> tuple[T, ...]:
+    ...
+
+
+@overload
+def transform_tuple(
+    value,
+    transform: tuple[Callable[..., T], ...],
+) -> tuple[T, ...]:
+    ...
+
+
+@overload
+def transform_tuple(
+    value,
+    transform: tuple[tuple[Callable[..., T1]], Callable[..., T2]],
+) -> tuple[T1, T2]:
+    ...
+
+
+@overload
+def transform_tuple(
+    value: Union[
+        list,
+        tuple,
+        deque,
+        map,
+    ],
+    transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
+) -> tuple:
+    ...
+
+
 def transform_tuple(
     value: Union[
         list,
@@ -568,8 +760,34 @@ def batched(
         raise ValueError("n must be at least one")
 
     result: list[tuple[T, ...]] = []
-    while batch := tuple(itertools.islice(iter(iterable), n)):
-        result.append(batch)
+    iter_ = iter(iterable)
+
+    try:
+        while part_ := next(iter_):
+            try:
+                batch = (part_, *tuple(next(iter_) for _ in range(n - 1)))
+            except RuntimeError as exc:
+                length = 0
+                try:
+                    for _ in iter(iterable):
+                        length += 1
+                except RuntimeError:
+                    pass
+                batch_number = len(result) + 1
+                missing_items = length - n * (batch_number - 1)
+                exception = IteratorExhaustedError(
+                    f"batched() iterator was prematurely exhausted (length={length}, n={n}, batch_number={len(result) + 1}, missing_items={missing_items})"
+                )
+                exception.result = result
+                raise exception from exc
+
+            result.append(batch)
+    except StopIteration as exc:
+        if not result:
+            exception = IteratorExhaustedError("batched() was called on an iterator that was already exhausted")
+            exception.result = result
+            raise exception from exc
+        return result
 
     return result
 
@@ -580,17 +798,3 @@ def paired(iterable: Iterable[T]) -> list[tuple[T, T]]:
 
 def pairwise(iterable: Iterable[T]) -> list[tuple[T, T]]:
     return list(itertools.pairwise(iterable))
-
-
-def input_filepath():
-    from values import values
-
-    return values.input_filename
-
-
-def input_basename():
-    import os
-
-    from values import values
-
-    return values.input_filename.rpartition(os.sep)[-1]

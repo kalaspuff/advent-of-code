@@ -3,11 +3,19 @@ name = "advent-of-code"
 version = "2023.12"
 description = "My solutions to some of the \"Advent of Code\" programming puzzles."
 authors = ["Carl Oscar Aaro <hello@carloscar.com>"]
+packages = [
+    { include = "cli.py" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
 prompt_toolkit = "^3.0.36"
 utcnow = "^0.3.8"
+
+[tool.poetry.scripts]
+advent-of-code = "cli:main"
+advent = "cli:main"
+aoc = "cli:main"
 
 [build-system]
 requires = ["poetry_core>=1.0.0"]
@@ -57,7 +65,11 @@ ignore = [
     "B023", # loop variable
     "UP038", # union type annotations
     "E731", # lambda
-    "PLR2004", # magic-value-comparison
+    "PLR2004", # magic value comparison
+    "SLF001", # private value accessed
+    "B905", # zip without strict
+    "B010", # setattr without constant
+    "C416", # unnecessary list comprehension
 ]
 src = [
     "*.py",

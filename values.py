@@ -2,8 +2,26 @@
 
 from __future__ import annotations
 
+import inspect
+import weakref
+from abc import ABCMeta, abstractmethod
 from types import GenericAlias as _GenericAlias
-from typing import Any, Callable, Generic, Iterable, List, Optional, ParamSpec, Protocol, TypeVar, Union, cast, overload
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    ParamSpec,
+    Protocol,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 from helpers import findall_rows, group_rows, match_rows
 from matrix import Matrix
@@ -65,9 +83,6 @@ class GenericAlias(Protocol[C_co]):
 #         return self.__orig_class__.__args__[0]  # type: ignore[attr-defined]
 
 
-from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Tuple, Type, TypeVar
-
 # class CallableTMeta(ABCMeta):
 #    def __getitem__(cls, item) -> CallableT:
 #        return type("CallableT", (CallableT,), {"__return_type__": item})
@@ -120,11 +135,77 @@ class CallableT(GenericAlias[Callable[..., R]]):
     #     return super().__class_getitem__(item)
 
 
+class _AssignableValue:
+    def __init__(self, value=None):
+        self.value = value
+
+
+class Assignable:
+    _assignments = {}
+
+    def __new__(self, value=None):
+        print("NEW", self, value)
+        instance = super().__new__(self)
+        print(instance)
+        return instance
+
+    def __init__(self, value=None):
+        self.value = value
+        print("INIT", self, value)
+        self._weakref = weakref.ref(self)
+        weakref.finalize(self, Assignable._on_finalize, weakref.ref(self))
+
+    @classmethod
+    def _on_finalize(cls, value):
+        print("ON FINALIZE", cls, value)
+        return
+        for var_name, ref in Assignable._assignments.items():
+            if ref() is None:
+                print("GARBAGE COLLECTED", ref, var_name)
+                # garbage collected
+                frame = inspect.currentframe()
+                try:
+                    frame.f_back.f_locals[var_name] = Assignable(value)
+                    print("FRAME", frame.f_back.f_locals)
+                finally:
+                    del frame
+                break
+
+    def __repr__(self):
+        if not hasattr(self, "value"):
+            return "Assignable"
+        return f"Assignable({self.value})"
+
+
+def assign(name: str, value: Any) -> None:
+    frame = inspect.currentframe()
+    try:
+        frame.f_back.f_locals[name] = value
+        Assignable._assignments[name] = weakref.ref(value)
+    finally:
+        del frame
+
+
+# some_variable = Assignable()
+# print("A 1", some_variable)
+# some_variable = "test"
+# print("A 2", some_variable)
+#
+# assign("some_variable", Assignable())
+# print("B 1", some_variable)
+# some_variable = "test"
+# print("B 2", some_variable)
+#
+# import sys
+#
+# sys.exit(0)
+
+
 class Values:
     def __init__(self) -> None:
-        self.attrs: List[str] = ["year", "day", "part", "input_filename"]
+        self.attrs: List[str] = ["year", "day", "part", "input_filename", "elapsed_time"]
         self.input_: str = ""
-        self.result: List[Any] = []
+        self.result: Any = []
         self.counter: int = 0
         self.year: int
         self.day: int

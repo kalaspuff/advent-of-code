@@ -6,8 +6,11 @@ import importlib
 import importlib.util
 import pathlib
 import sys
+import time
+import typing
 
-from values import values
+import helpers
+from values import Values, values
 
 if len(sys.argv) < 4:
     print("usage: python aoc.py <year> <day> <part> [puzzle input filename]")
@@ -42,13 +45,14 @@ else:
     input_filename_fullpath = f"{day_path}/{input_filename}"
 
 input_ = ""
-with open(input_filename_fullpath, "r") as f:
-    input_ = f.read()
+try:
+    with open(input_filename_fullpath, "r") as f:
+        input_ = f.read()
+except Exception:
+    print("warning: cannot read puzzle input from file")
+    raise
 
-input_ = input_.rstrip()
-
-values.input_ = input_
-
+values.input_ = input_.rstrip()
 values.year = year
 values.day = day
 values.part = part
@@ -71,40 +75,60 @@ async def _async():
         sys.exit(1)
 
     module_import = importlib.util.module_from_spec(spec)
+
+    # inject values into module (it's messy, but with quicker access we some seconds of typing)
+    if getattr(module_import, "values", None) is None:
+        setattr(module_import, "values", values)
+    for name in ("rows", "lines"):
+        if getattr(module_import, name, None) is None:
+            setattr(module_import, name, values.rows)
+    for name in ("matrix", "grid"):
+        if getattr(module_import, name, None) is None:
+            setattr(module_import, name, values.matrix)
+    for name in ("input", "raw", "data", "raw_input", "raw_data"):
+        if getattr(module_import, name, None) is None:
+            setattr(module_import, name, values.input_)
+    for name in "":
+        if getattr(module_import, name, None) is None:
+            setattr(module_import, name, values.input_)
+    for name in ("is_example", "example"):
+        if getattr(module_import, name, None) is None:
+            setattr(module_import, name, "input" not in values.input_basename)
+
+    # inject helper functions into module (it's messy, but with quicker access we some seconds of typing)
+    for name in helpers.__dict__:
+        if not name.startswith("_") and name not in module_import.__dict__:
+            setattr(module_import, name, getattr(helpers, name))
+
+    # inject types into module (it's messy, but with quicker access we some seconds of typing)
+    for name in (
+        "Dict",
+        "List",
+        "Set",
+        "Tuple",
+        "Optional",
+        "Union",
+        "Any",
+        "Callable",
+        "Iterable",
+        "Type",
+        "Literal",
+    ):
+        if not name.startswith("_") and name not in module_import.__dict__:
+            setattr(module_import, name, getattr(typing, name))
+
     getattr(spec.loader, "exec_module")(module_import)
 
-    result = await getattr(module_import, "run")()
-    result_output = False
+    result_large_output = False
+    start_time = time.time()
 
-    for key in values.attrs:
-        if key in ("input",):
-            continue
+    try:
+        result = await getattr(module_import, "run")()
+    except Exception as exc:
+        result = exc
 
-        result_output = True
-        v = getattr(values, key, None)
-
-        if key == "result" and not v:
-            continue
-
-        key_str = f"[values.{key}]"
-        key_str = f"{key_str:24s}"
-
-        if isinstance(v, str):
-            print("{} (str)     {}".format(key_str, v))
-        elif isinstance(v, bool):
-            print("{} (bool)    {}".format(key_str, "true" if v else "false"))
-        elif isinstance(v, (int, float)):
-            print("{} (number)  {}".format(key_str, v))
-        elif isinstance(v, (decimal.Decimal)):
-            print("{} (number)  {}".format(key_str, v))
-        elif isinstance(v, (tuple)):
-            print("{} (tuple)   {}".format(key_str, v))
-        elif isinstance(v, (dict)):
-            print("{} (dict)    {}".format(key_str, v))
-        elif isinstance(v, (list)):
-            print("{} (list)    {}".format(key_str, v))
-        else:
-            print("{} (unknown) {}".format(key_str, v))
+    values.elapsed_time = time.time() - start_time
+    grouped_attrs = {"year", "day", "part", "input_filename", "elapsed_time"}
 
     if result is None and getattr(values, "result", None):
         result = getattr(values, "result", None)
@@ -112,15 +136,146 @@ async def _async():
     if result is None and getattr(values, "counter", None):
         result = getattr(values, "counter", None)
 
-    if result is not None:
-        if result_output:
-            print("")
+    if "result" in values.attrs:
+        attr_value = values.result
+        values.attrs.remove("result")
+        if attr_value and result != attr_value:
+            values.attrs.append("result")
 
-        if result is str and "\n" in result:
-            print("Result:")
+    if isinstance(result, str):
+        result = result.strip()
+
+    if "_result" in values.attrs:
+        if values._result and result and values._result != result:
+            print("WARNING: _result already set in values.attrs")
+            print("WARNING: _result will be overwritten")
+            print("PREVIOUS _result:")
+            print(values._result)
+            print("---")
+        values.attrs.remove("_result")
+
+    if result is not None:
+        values._result = result
+        values.attrs.append("_result")
+
+    for key_ in values.attrs:
+        key = key_
+
+        if key in ("input",):
+            continue
+
+        v = getattr(values, key, None)
+
+        type_ = type(v).__name__
+        if isinstance(v, decimal.Decimal):
+            type_ = "number"
+        if isinstance(v, (Exception, BaseException)):
+            type_ = "error"
+            v = "[uncaught exception]"
+        if isinstance(v, bool):
+            v = "true" if v else "false"
+
+        category = "values"
+        emoji = "❄️ "
+
+        match key:
+            case "year" | "day":
+                category = "challenge"
+                emoji = "🗓️ "
+                type_ = "number"
+            case "part":
+                category = "challenge"
+                emoji = "🧦"
+                type_ = "number"
+            case "input_filename":
+                category = "puzzle"
+                key = "input.filename"
+                type_ = "path"
+                emoji = "💾"
+                v = f"{v} ({len(values.input_):,} bytes)"
+            case "elapsed_time":
+                category = "process"
+                key = "time.elapsed"
+                type_ = "seconds"
+                emoji = "⏱️ "
+                v = f"{v:.6f}"
+            case "_result":
+                category = "output"
+                key = "result"
+                emoji = "🎁"
+                try:
+                    if bool("\n" in str(v) or len(str(v)) > 40):
+                        result_large_output = True
+                        v = "[large result]"
+                except Exception:
+                    result_large_output = True
+
+        type_str = f"{type_}"
+        type_str = f"{type_str:9s}"
+
+        key_str = f"{category}.{key}"
+        key_str = f"{key_str:24s}"
+
+        if not grouped_attrs:
+            grouped_attrs.add(key_)
+            print("---")
+        elif key_ in grouped_attrs:
+            grouped_attrs.remove(key_)
+
+        try:
+            print(f"{key_str} {emoji} {type_str} {v}")
+        except Exception:
+            print(f"{key_str} {emoji} {type_str} [cannot be coerced to str]")
+
+    try:
+        if isinstance(result, list) and all(isinstance(row, (str)) for row in result):
+            result = "\n".join(result)
+            result_large_output = True
+    except Exception:
+        pass
+
+    if result_large_output:
+        print("")
+        try:
             print(result)
-        else:
-            print(f"Result: {result}")
+        except Exception as exc:
+            print("result cannot be coerced to str")
+            result = exc
+
+    if isinstance(result, Exception):
+        import traceback
+
+        frames = []
+        tb_back = None
+        tb = result.__traceback__
+
+        while tb:
+            module_name = tb.tb_frame.f_globals.get("__name__", "") if tb.tb_frame and tb.tb_frame.f_globals else ""
+            frames.append((tb, module_name))
+            if module_name not in ("cli", "aoc"):
+                tb_back = tb
+            tb = tb.tb_next
+
+        if tb_back:
+            for tb, module_name in reversed(frames):
+                if tb_back:
+                    if tb is not tb_back:
+                        continue
+                    tb_back = None
+
+                if tb.tb_next and module_name in ("cli", "aoc"):
+                    result.with_traceback(tb.tb_next)
+                    break
+
+        print("")
+        traceback.print_exception(type(result), result, result.__traceback__, None)
+
+    if values.input_ == "":
+        print("")
+        print("warning: puzzle input was missing or empty")
+
+    if isinstance(result, (Exception, BaseException)):
+        sys.exit(1)
 
 
 asyncio.run(_async())

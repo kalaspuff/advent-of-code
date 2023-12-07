@@ -2,7 +2,7 @@ from helpers import transform_tuple
 from values import values
 
 
-async def run() -> int:
+async def run() -> int | float:
     seeds: tuple[int, ...] = transform_tuple(values.rows[0].split()[1:], int)
 
     maps: list[list[tuple[int, int, int]]] = []
