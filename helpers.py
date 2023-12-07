@@ -205,11 +205,11 @@ def int_plus(value: Any, mod: Union[int, str] = 1) -> int:
     return int(value) + int(mod)
 
 
-def int_list(value: Sequence) -> List[int]:
+def int_list(value: Sequence) -> list[int]:
     return list(map(int, value))
 
 
-def int_rows(value: Sequence) -> List[int]:
+def int_rows(value: Sequence) -> list[int]:
     return int_list(value)
 
 
@@ -298,11 +298,11 @@ def tuple_sub(value: T, mod: T) -> T:
 
 
 def split_to_dict(
-    values: Union[str, List[str]],
-    split: Optional[Union[str, List[str], tuple[str, ...]]] = None,
-    delimit: Optional[Union[str, List[str], tuple[str, ...]]] = None,
+    values: Union[str, list[str]],
+    split: Optional[Union[str, list[str], tuple[str, ...]]] = None,
+    delimit: Optional[Union[str, list[str], tuple[str, ...]]] = None,
     strip: bool = True,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     if isinstance(values, str):
         values = [values]
 
@@ -328,7 +328,7 @@ def split_to_dict(
             split_rows = sub_result
         merged_rows += split_rows
 
-    result: Dict[str, str] = {}
+    result: dict[str, str] = {}
     for row in merged_rows:
         for s in delimit:
             if s in row:
@@ -339,17 +339,17 @@ def split_to_dict(
 
 
 def match_rows(
-    rows: List[str], regexp: str, transform: Optional[Union[tuple[Any, ...], List[Any], Callable[..., Any]]] = None
+    rows: list[str], regexp: str, transform: Optional[Union[tuple[Any, ...], list[Any], Callable[..., Any]]] = None
 ) -> Any:
     if not transform:
         transform = ()
-    transform_all = str
+    transform_all: Callable[..., Any] = str
     if not isinstance(transform, (tuple, list)):
         transform_all = transform
         transform = ()
 
     return [
-        (
+        tuple(
             transform_all(v) if len(transform) <= i else transform[i](v)
             for i, v in (
                 enumerate(cast(re.Match[str], re.match(regexp, row)).groups())
@@ -358,11 +358,11 @@ def match_rows(
             )
         )
         for row in rows
-    ]  # type: ignore
+    ]
 
 
 def findall_rows(
-    rows: List[str], regexp: str, transform: Optional[Union[tuple[Any, ...], List[Any], Callable[..., Any]]] = None
+    rows: list[str], regexp: str, transform: Optional[Union[tuple[Any, ...], list[Any], Callable[..., Any]]] = None
 ) -> Any:
     if not transform:
         transform = ()
@@ -372,17 +372,17 @@ def findall_rows(
         transform = ()
 
     return [
-        (
+        tuple(
             transform_all(v) if len(transform) <= i else transform[i](v)
             for i, v in (enumerate(re.findall(regexp, row)) if re.findall(regexp, row) is not None else ())
         )
         for row in rows
-    ]  # type: ignore
+    ]
 
 
-def group_rows(rows: List[str], split: str = "", transform: Optional[Callable] = None) -> List[List[str]]:
-    groups: List[List[str]] = []
-    group: List[str] = []
+def group_rows(rows: list[str], split: str = "", transform: Optional[Callable] = None) -> list[list[str]]:
+    groups: list[list[str]] = []
+    group: list[str] = []
 
     for row in rows:
         value = row

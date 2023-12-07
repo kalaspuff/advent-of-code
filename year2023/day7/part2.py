@@ -12,8 +12,8 @@ def joker_scored(hand: str) -> tuple[tuple[int, ...], ...]:
         return hand_strength(hand, hand)
 
     possibilities = ([card] if card != "J" else JOKER for card in list(hand))
-    max_score = ()
-    for hand_ in set(itertools.product(*possibilities)):
+    max_score: tuple[tuple[int, ...], ...] = ()
+    for hand_ in itertools.product(*possibilities):
         score = hand_strength("".join(hand_), hand)
         if score > max_score:
             max_score = score
@@ -33,10 +33,10 @@ def hand_strength(hand: str, actual_hand: str) -> tuple[tuple[int, ...], ...]:
 async def run():
     result = 0
 
-    hands_and_bids = [(hand, bid) for hand, bid in values.match_rows(r"(.*) (\d+)", transform=(str, int))]
+    hands_and_bids = list(values.match_rows(r"(.*) (\d+)", transform=(str, int)))
     sorted_hands = sorted(hands_and_bids, key=lambda x: joker_scored(x[0]), reverse=False)
 
-    for rank, (hand, bid) in enumerate(sorted_hands, start=1):
+    for rank, (_, bid) in enumerate(sorted_hands, start=1):
         result += rank * bid
 
     return result

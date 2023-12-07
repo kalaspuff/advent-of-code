@@ -18,10 +18,10 @@ def hand_strength(hand: str) -> tuple[tuple[int, ...], ...]:
 async def run() -> int:
     result = 0
 
-    hands_and_bids = [(hand, bid) for hand, bid in values.match_rows(r"(.*) (\d+)", transform=(str, int))]
+    hands_and_bids = list(values.match_rows(r"(.*) (\d+)", transform=(str, int)))
     sorted_hands = sorted(hands_and_bids, key=lambda x: hand_strength(x[0]), reverse=False)
 
-    for rank, (hand, bid) in enumerate(sorted_hands, start=1):
+    for rank, (_, bid) in enumerate(sorted_hands, start=1):
         result += rank * bid
 
     return result
