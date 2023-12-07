@@ -792,7 +792,27 @@ def batched(
     return result
 
 
-def paired(iterable: Iterable[T]) -> list[tuple[T, T]]:
+@overload
+def paired(iterable: tuple[T1, T2]) -> list[tuple[T1, T2]]:
+    ...
+
+
+@overload
+def paired(iterable: tuple[T1, T2, T1, T2]) -> list[tuple[T1, T2]]:
+    ...
+
+
+@overload
+def paired(iterable: tuple[T1, T2, T1, T2, T1, T2]) -> list[tuple[T1, T2]]:
+    ...
+
+
+@overload
+def paired(iterable: Iterable[T] | tuple[T, ...]) -> list[tuple[T, T]]:
+    ...
+
+
+def paired(iterable: Iterable[Any] | tuple[Any, ...]) -> list[tuple[Any, Any]]:
     return batched(iterable, 2)
 
 

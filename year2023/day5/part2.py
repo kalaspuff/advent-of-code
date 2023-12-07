@@ -3,8 +3,8 @@ from values import values
 
 
 async def run() -> int:
-    seed_values = transform_tuple(values.rows[0].split()[1:], (int, int, str))
-    seed_ranges: set[tuple[int, int, int]] = {(*pair, 0) for pair in paired(seed_values)}
+    seed_values = transform_tuple(values.rows[0].split()[1:], int)
+    seed_ranges = {(*pair, int(0)) for pair in paired(seed_values)}
 
     maps: list[list[tuple[int, int, int]]] = []
     for row in values.rows[1:]:
@@ -15,7 +15,7 @@ async def run() -> int:
             maps[-1].append(map_entry)
 
     for map_ in maps:
-        updated_ranges = set()
+        updated_ranges: set[tuple[int, int, int]] = set()
         while seed_ranges:
             seed_range = seed_ranges.pop()
             if seed_range in updated_ranges:

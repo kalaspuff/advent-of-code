@@ -192,7 +192,7 @@ async def _async():
                 key = "input.filename"
                 type_ = "path"
                 emoji = "💾"
-                v = f"{v} ({len(values.input_):,} bytes)"
+                v = f"{v} ({len(values.input_)} bytes)"
             case "elapsed_time":
                 category = "process"
                 key = "time.elapsed"
