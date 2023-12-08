@@ -4,6 +4,8 @@ import asyncio
 import decimal
 import importlib
 import importlib.util
+import itertools
+import math
 import pathlib
 import sys
 import time
@@ -95,12 +97,18 @@ async def _async():
         if getattr(module_import, name, None) is None:
             setattr(module_import, name, "input" not in values.input_basename)
 
-    # inject helper functions into module (it's messy, but with quicker access we some seconds of typing)
+    # inject helper functions into module
     for name in helpers.__dict__:
         if not name.startswith("_") and name not in module_import.__dict__:
             setattr(module_import, name, getattr(helpers, name))
 
-    # inject types into module (it's messy, but with quicker access we some seconds of typing)
+    # inject nice-to-have modules
+    for module in (math, itertools, helpers):
+        name = module.__name__
+        if not name.startswith("_") and name not in module_import.__dict__:
+            setattr(module_import, name, module)
+
+    # inject types into module
     for name in (
         "Dict",
         "List",
