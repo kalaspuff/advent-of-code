@@ -17,7 +17,7 @@ from helpers import (
     tuple_add,
 )
 from matrix import Matrix
-from values import values
+from values import Values, values
 
 if False:
     # potential copy-pasta / quick inspiration
@@ -57,6 +57,10 @@ if False:
     pos = (5, 6)
     for mod in itertools.product([-1, 0, 1], [-1, 0, 1]):
         pos_ = tuple_add(pos, mod)
+
+
+# https://docs.python.org/3/library/itertools.html
+# https://docs.python.org/3/library/collections.html
 
 
 async def run():

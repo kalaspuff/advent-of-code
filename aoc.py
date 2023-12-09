@@ -90,9 +90,9 @@ async def _async():
     for name in ("input", "raw", "data", "raw_input", "raw_data"):
         if getattr(module_import, name, None) is None:
             setattr(module_import, name, values.input_)
-    for name in "":
+    for name in ("Values",):
         if getattr(module_import, name, None) is None:
-            setattr(module_import, name, values.input_)
+            setattr(module_import, name, Values)
     for name in ("is_example", "example"):
         if getattr(module_import, name, None) is None:
             setattr(module_import, name, "input" not in values.input_basename)

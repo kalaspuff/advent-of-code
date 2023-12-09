@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import inspect
+import itertools
 import weakref
 from abc import ABCMeta, abstractmethod
 from types import GenericAlias as _GenericAlias
 from typing import (
     Any,
     Callable,
+    Collection,
     Generic,
     Iterable,
+    Iterator,
     Optional,
     ParamSpec,
     Protocol,
+    Reversible,
+    Self,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -22,7 +28,7 @@ from typing import (
     overload,
 )
 
-from helpers import findall_rows, group_rows, match_rows
+from helpers import batched, findall_rows, group_rows, match_rows, paired, pairwise
 from matrix import Matrix
 
 T = TypeVar("T")
@@ -199,9 +205,12 @@ def assign(name: str, value: Any) -> None:
 #
 # sys.exit(0)
 
+ValuesIntT = TypeVar("ValuesIntT", "ValuesRow", str)
+ValuesSliceT = TypeVar("ValuesSliceT", "ValuesSlice", str)
 
-class Values:
-    def __init__(self) -> None:
+
+class Values(Generic[ValuesIntT, ValuesSliceT]):
+    def __init__(self, *input_: Any) -> None:
         self.attrs: list[str] = ["year", "day", "part", "input_filename", "elapsed_time"]
         self.input_: str = ""
         self.result: Any = []
@@ -215,6 +224,37 @@ class Values:
         self._csv: list[str]
         self._int_csv: list[int]
         self._matrix: Matrix
+        self._origin: Optional[Values] = None
+        self._index: Optional[int] = None
+        self._row_index: Optional[int] = None
+        self._slice: Optional[slice] = None
+        self._next_slice: Optional[slice] = None
+        self._single_row: bool = False
+        self._starred_assignment: Optional[Values] = None
+        self._iter_returned: Optional[list[Any]] = None
+        self._origin_iterator: Optional[Values] = None
+        self._sized: bool = True
+        self._reversed: bool = False
+
+        if input_:
+            if isinstance(input_, str):
+                self.input_ = input_
+            elif isinstance(input_, Values):
+                self.input_ = input_.input
+            elif isinstance(input_, (list, tuple, Sequence)):
+                if isinstance(input_, (list, tuple, Sequence)) and len(input_) == 1:
+                    input_ = input_[0]
+                if isinstance(input_, (Values, str)):
+                    input_ = (input_,)
+                rows: list[str] = []
+                for row_data in input_:
+                    if isinstance(row_data, str):
+                        rows.extend(row_data.split("\n"))
+                    elif isinstance(row_data, Values):
+                        rows.extend(row_data.input.split("\n"))
+                    else:
+                        rows.extend(Values(row_data).input_.split("\n"))
+                self.input_ = "\n".join(rows)
 
     def __setattr__(self, key: str, value: Any) -> None:
         super().__setattr__(key, value)
@@ -223,25 +263,177 @@ class Values:
                 return
             self.attrs.append(key)
 
+    # def __class_getitem__(cls, item: type[T]) -> Values[type[T]]:
+    #     return Values[type[T]]
+
+    @overload
+    def __getitem__(self, value: int) -> ValuesIntT:
+        ...
+
+    @overload
+    def __getitem__(self, value: slice) -> ValuesSliceT:
+        ...
+
+    # @overload
+    # def __getitem__(self, value: slice | int) -> Values[ValuesIntT, ValuesSliceT]:
+    #     ...
+
+    def __getitem__(self, value: slice | int) -> Values | ValuesIntT | ValuesSliceT:
+        try:
+            if self._single_row and self._index is None:
+                return cast(ValuesIntT, self.input[value])
+
+            _ = self.rows[value]  # trigger IndexError if out of bounds
+
+            # print(
+            #     self._index,
+            #     value,
+            #     self._slice,
+            #     self._next_slice,
+            #     "starred=True" if self._starred_assignment else "starred=False",
+            # )
+            values: Values = cast(ValuesRow | ValuesSlice, Values())
+            values._origin = self
+            values._slice = value if isinstance(value, slice) else slice(value, (value + 1) if value != -1 else None)
+            if self._index is not None and isinstance(value, slice):
+                # values._next_slice = slice(
+                #     value.start - self._index, None if value.stop is None else value.stop - self._index, value.step
+                # )
+                self._starred_assignment = values
+            if isinstance(value, int):
+                values._single_row = True
+            return values
+        finally:
+            self._sized = True
+
+    def __len__(self) -> int:
+        if not self._sized:
+            raise NotImplementedError
+        if self._single_row:
+            return len(self.input)
+        return len(self.rows)
+
+    def __str__(self) -> str:
+        return str(self.input)
+
+    def __iter__(self) -> Iterator[Values]:
+        iterator = self[self._index or 0 :]
+        if not isinstance(iterator, Values):
+            raise Exception("invalid iterator")
+        iterator._origin_iterator = self
+        iterator._sized = False
+        iterator._index = 0
+        iterator._iter_returned = []
+        return iterator
+
+    def __next__(self) -> Values:
+        self._sized = False
+        if self._index is None:
+            raise Exception("iterator is not initialized - initialize with iter(...)")
+
+        _index = self._index
+        if _index >= len(self.rows):
+            if self._starred_assignment:
+                self._starred_assignment._next_slice = None
+                self._starred_assignment = None
+            self._next_slice = None
+            # print("***")
+            # print(self._starred_assignment[-1])
+            # print("***")
+            # print(self._iter_returned)
+            # print(self._origin_iterator._iter_returned)
+            # print("***")
+            # print("***")
+            raise StopIteration
+        if self._next_slice is not None:
+            values = cast(Values, self[self._next_slice])
+            self._index = _index + len(values.rows)
+        else:
+            values = cast(Values, self[_index])
+            self._index = _index + 1
+        if self._iter_returned is not None:
+            self._iter_returned.append(values)
+        return values
+
+    def __add__(self, other):
+        print("__ADD__")
+        raise NotImplementedError
+
+    def __radd__(self, other):
+        print("__RADD__")
+        raise NotImplementedError
+
+    def __iadd__(self, other):
+        print("__IADD__")
+        raise NotImplementedError
+
+    def __delitem__(self, key):
+        print("__DELITEM__")
+        raise NotImplementedError
+
+    def __setitem__(self, key, value):
+        print("__SETITEM__")
+        raise NotImplementedError
+
+    def __reversed__(self) -> Self:
+        values = self.__copy__()
+        if self._slice:
+            values._slice = slice(self._slice.start, self._slice.stop, self._slice.step * (-1))
+        else:
+            values._slice = slice(None, None, -1)
+        values._reversed = not self._reversed
+        return values
+
+    def __contains__(self, item) -> bool:
+        print("__CONTAINS__")
+        raise NotImplementedError
+
+    def __copy__(self) -> Self:
+        values = Values()
+        values._origin = self
+        values._reversed = self._reversed
+        return values
+
+    def __deepcopy__(self, memo: dict) -> Self:
+        values = Values()
+        values._rows = self.rows[:: -1 if self._reversed else 1]
+        values.input_ = self.input[:: -1 if self._reversed else 1]
+        if self._reversed:
+            values._reversed = self._reversed
+            values._slice = slice(None, None, -1)
+        return values
+
+    def count(self, value):
+        print("COUNT")
+
+    def index(self, value):
+        print("INDEX")
+
+    def seek(self, index: int) -> Self:
+        self._index = index
+        return self
+
+    def reset(self) -> Self:
+        self.seek(0)
+        return self
+
     def split(self, split_value: str) -> list[str]:
-        return self.input_.split(split_value)
+        return self.input.split(split_value)
 
     def match(self, regexp: str, transform: Optional[Union[tuple[Any, ...], list[Any]]] = None) -> Any:
-        return match_rows([self.input_], regexp, transform=transform)[0]
+        return match_rows([self.input], regexp, transform=transform)[0]
 
     @overload
-    def match_rows(self, regexp: str, transform: tuple[Callable[..., T1]], start: int = 0) -> list[tuple[T1]]:
+    def match_rows(self, regexp: str, transform: tuple[Callable[..., T1]]) -> list[tuple[T1]]:
+        ...
+
+    @overload
+    def match_rows(self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2]]) -> list[tuple[T1, T2]]:
         ...
 
     @overload
     def match_rows(
-        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2]], start: int = 0
-    ) -> list[tuple[T1, T2]]:
-        ...
-
-    @overload
-    def match_rows(
-        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3]], start: int = 0
+        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3]]
     ) -> list[tuple[T1, T2, T3]]:
         ...
 
@@ -250,7 +442,6 @@ class Values:
         self,
         regexp: str,
         transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4]],
-        start: int = 0,
     ) -> list[tuple[T1, T2, T3, T4]]:
         ...
 
@@ -259,7 +450,6 @@ class Values:
         self,
         regexp: str,
         transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4], Callable[..., T5]],
-        start: int = 0,
     ) -> list[tuple[T1, T2, T3, T4, T5]]:
         ...
 
@@ -275,7 +465,6 @@ class Values:
             Callable[..., T5],
             Callable[..., T6],
         ],
-        start: int = 0,
     ) -> list[tuple[T1, T2, T3, T4, T5, T6]]:
         ...
 
@@ -292,20 +481,19 @@ class Values:
             Callable[..., T],
             *tuple[Callable[..., T], ...],
         ],
-        start: int = 0,
     ) -> list[tuple[T, ...]]:
         ...
 
     @overload
-    def match_rows(self, regexp: str, transform: Callable[..., T], start: int = 0) -> list[tuple[T, ...]]:
+    def match_rows(self, regexp: str, transform: Callable[..., T]) -> list[tuple[T, ...]]:
         ...
 
     @overload
-    def match_rows(self, regexp: str, transform: list[Callable[..., T]], start: int = 0) -> list[tuple[T, ...]]:
+    def match_rows(self, regexp: str, transform: list[Callable[..., T]]) -> list[tuple[T, ...]]:
         ...
 
     @overload
-    def match_rows(self, regexp: str, transform: None = None, start: int = 0) -> list[tuple[Any, ...]]:
+    def match_rows(self, regexp: str, transform: None = None) -> list[tuple[Any, ...]]:
         ...
 
     def match_rows(
@@ -334,24 +522,21 @@ class Values:
                 list[Callable[..., Any]],
             ]
         ] = None,
-        start: int = 0,
     ) -> list[Any]:
         transform_ = tuple(transform) if isinstance(transform, (tuple, list, Iterable)) else transform
         return match_rows(self.rows[start:], regexp, transform=transform_)
 
     @overload
-    def findall_rows(self, regexp: str, transform: tuple[Callable[..., T1]], start: int = 0) -> list[tuple[T1]]:
+    def findall_rows(self, regexp: str, transform: tuple[Callable[..., T1]]) -> list[tuple[T1]]:
+        ...
+
+    @overload
+    def findall_rows(self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2]]) -> list[tuple[T1, T2]]:
         ...
 
     @overload
     def findall_rows(
-        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2]], start: int = 0
-    ) -> list[tuple[T1, T2]]:
-        ...
-
-    @overload
-    def findall_rows(
-        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3]], start: int = 0
+        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3]]
     ) -> list[tuple[T1, T2, T3]]:
         ...
 
@@ -360,7 +545,6 @@ class Values:
         self,
         regexp: str,
         transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4]],
-        start: int = 0,
     ) -> list[tuple[T1, T2, T3, T4]]:
         ...
 
@@ -369,7 +553,6 @@ class Values:
         self,
         regexp: str,
         transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4], Callable[..., T5]],
-        start: int = 0,
     ) -> list[tuple[T1, T2, T3, T4, T5]]:
         ...
 
@@ -385,7 +568,6 @@ class Values:
             Callable[..., T5],
             Callable[..., T6],
         ],
-        start: int = 0,
     ) -> list[tuple[T1, T2, T3, T4, T5, T6]]:
         ...
 
@@ -402,20 +584,19 @@ class Values:
             Callable[..., T],
             *tuple[Callable[..., T], ...],
         ],
-        start: int = 0,
     ) -> list[tuple[T, ...]]:
         ...
 
     @overload
-    def findall_rows(self, regexp: str, transform: Callable[..., T], start: int = 0) -> list[tuple[T, ...]]:
+    def findall_rows(self, regexp: str, transform: Callable[..., T]) -> list[tuple[T, ...]]:
         ...
 
     @overload
-    def findall_rows(self, regexp: str, transform: list[Callable[..., T]], start: int = 0) -> list[tuple[T, ...]]:
+    def findall_rows(self, regexp: str, transform: list[Callable[..., T]]) -> list[tuple[T, ...]]:
         ...
 
     @overload
-    def findall_rows(self, regexp: str, transform: None = None, start: int = 0) -> list[tuple[Any, ...]]:
+    def findall_rows(self, regexp: str, transform: None = None) -> list[tuple[Any, ...]]:
         ...
 
     def findall_rows(
@@ -444,10 +625,24 @@ class Values:
                 list[Callable[..., Any]],
             ]
         ] = None,
-        start: int = 0,
     ) -> list[Any]:
         transform_ = tuple(transform) if isinstance(transform, (tuple, list, Iterable)) else transform
-        return findall_rows(self.rows[start:], regexp, transform=transform_)
+        return findall_rows(self.rows, regexp, transform=transform_)
+
+    def findall_ints(self) -> list[tuple[int, ...]]:
+        return self.findall_rows(r"(-?\d+)", int)
+
+    def findall_int(self) -> list[tuple[int, ...]]:
+        return self.findall_ints()
+
+    def findall_alphanums(self) -> list[tuple[str, ...]]:
+        return self.findall_rows(r"([a-zA-Z0-9]+)")
+
+    def findall_alphanum(self) -> list[tuple[str, ...]]:
+        return self.findall_alphanums()
+
+    def findall_alpha(self) -> list[tuple[str, ...]]:
+        return self.findall_alphanums()
 
     def grouped_rows(self, *, split: str = "", transform: Optional[Callable] = None) -> list[list[str]]:
         return group_rows(self.rows, split=split, transform=transform)
@@ -455,15 +650,51 @@ class Values:
     def group_rows(self, *, split: str = "", transform: Optional[Callable] = None) -> list[list[str]]:
         return self.grouped_rows(split=split, transform=transform)
 
+    def pairwise(self) -> list[tuple[Any, Any]]:
+        return pairwise(self.rows)
+
+    def batched(self, n) -> list[tuple[Any, ...]]:
+        return batched(self.rows, n)
+
+    def paired(self) -> list[tuple[Any, Any]]:
+        return paired(self.rows)
+
     @property
     def input(self) -> str:
-        return self.input_
+        value = "\n".join(self.rows[::-1] if self._reversed else self.rows) if self._origin is not None else self.input_
+        return value[::-1] if self._reversed else value
+
+    @property
+    def data(self) -> str:
+        return self.input
+
+    @property
+    def value(self) -> str:
+        return self.input
+
+    @property
+    def content(self) -> str:
+        return self.input
+
+    @property
+    def body(self) -> str:
+        return self.input
 
     @property
     def rows(self) -> list[str]:
+        if self._origin is not None:
+            if self._slice is not None:
+                return self._origin.rows[self._slice]
+            return self._origin.rows
         if getattr(self, "_rows", None) is None:
-            self._rows = self.input_.split("\n")
+            self._rows = self.input.split("\n")
+        if self._slice:
+            return self._rows[self._slice]
         return self._rows
+
+    @property
+    def lines(self) -> list[str]:
+        return self.rows
 
     @property
     def input_rows(self) -> list[str]:
@@ -486,7 +717,7 @@ class Values:
     @property
     def csv(self) -> list[str]:
         if getattr(self, "_csv", None) is None:
-            self._csv = self.input_.split(",")
+            self._csv = self.input.split(",")
         return self._csv
 
     @property
@@ -510,10 +741,43 @@ class Values:
         return self._matrix
 
     @property
+    def row_index(self) -> int:
+        origin_index = self._origin.row_index if self._origin is not None else 0
+        index = self._slice.start if self._slice else 0
+        return origin_index + index
+
+    @property
+    def line_index(self) -> int:
+        return self.row_index
+
+    @property
+    def n(self) -> int:
+        return self.row_index
+
+    @property
+    def i(self) -> int:
+        return self.row_index
+
+    @property
     def input_basename(self) -> str:
         import os
 
         return os.path.basename(self.input_filename)
 
 
-values = Values()
+Sequence.register(Values)
+Iterable.register(Values)
+Iterator.register(Values)
+Collection.register(Values)
+Reversible.register(Values)
+
+
+class ValuesSlice(Values["ValuesRow", "ValuesSlice"]):
+    ...
+
+
+class ValuesRow(Values[str, str]):
+    ...
+
+
+values: ValuesSlice = cast(ValuesSlice, Values())

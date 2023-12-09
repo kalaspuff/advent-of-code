@@ -558,16 +558,24 @@ def transform_tuple(
 @overload
 def transform_tuple(
     value,
-    transform: tuple[Callable[..., T], ...],
-) -> tuple[T, ...]:
+    transform: tuple[Callable[..., T1]],
+) -> tuple[T1]:
     ...
 
 
 @overload
 def transform_tuple(
     value,
-    transform: tuple[tuple[Callable[..., T1]], Callable[..., T2]],
+    transform: tuple[Callable[..., T1], Callable[..., T2]],
 ) -> tuple[T1, T2]:
+    ...
+
+
+@overload
+def transform_tuple(
+    value,
+    transform: tuple[Callable[..., T], ...],
+) -> tuple[T, ...]:
     ...
 
 
@@ -591,7 +599,16 @@ def transform_tuple(
         deque,
         map,
     ],
-    transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
+    transform: Optional[
+        Union[
+            Callable[..., Any],
+            tuple[Callable[..., Any], ...],
+            tuple[Callable[..., Any]],
+            tuple[Callable[..., Any], Callable[..., Any]],
+            list[Any],
+            Callable[..., Any],
+        ]
+    ] = None,
 ) -> tuple:
     if not transform:
         transform = ()

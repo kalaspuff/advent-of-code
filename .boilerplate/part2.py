@@ -17,7 +17,9 @@ from helpers import (
     tuple_add,
 )
 from matrix import Matrix
-from values import values
+from values import Values, values
+
+# https://docs.python.org/3/library/itertools.html
 
 
 async def run():

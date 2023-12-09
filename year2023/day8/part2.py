@@ -4,10 +4,8 @@ from values import values
 
 
 async def run() -> int:
-    instructions = values.rows[0]
-    node_connections = {
-        node: connections for node, *connections in values.match_rows(r"([^\s]+) = [(]([^,]+), ([^)]+)[)]", start=2)
-    }
+    instructions = values[0]
+    node_connections = {node: connections for node, *connections in values[2:].findall_alphanum()}
 
     starting_nodes = [node for node in node_connections if node.endswith("A")]
     instruction_length = len(instructions)

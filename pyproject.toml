@@ -70,6 +70,7 @@ ignore = [
     "B905", # zip without strict
     "B010", # setattr without constant
     "C416", # unnecessary list comprehension
+    "A003", # builtin shadowing
 ]
 src = [
     "*.py",
