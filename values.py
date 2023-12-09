@@ -633,7 +633,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         return self.findall_ints()
 
     def findall_alphanums(self) -> list[tuple[str, ...]]:
-        return self.findall_rows(r"([a-zA-Z0-9]+)")
+        return self.findall_rows(r"([a-zA-Z0-9]+)", transform=str)
 
     def findall_alphanum(self) -> list[tuple[str, ...]]:
         return self.findall_alphanums()

@@ -15,11 +15,13 @@ async def run() -> int:
         current_node = starting_node
         steps = 0
         visited_nodes = {}
+
         while current_node not in visited_nodes:
             visited_nodes[current_node] = steps
             direction = 0 if instructions[steps % instruction_length] == "L" else 1
             current_node = node_connections[current_node][direction]
             steps += 1
+
         cycle_lengths.add(steps - visited_nodes[current_node])
 
     return math.prod(cycle_lengths)

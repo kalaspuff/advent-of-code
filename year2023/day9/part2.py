@@ -4,7 +4,7 @@ from helpers import pairwise
 from values import values
 
 
-async def run():
+async def run() -> int:
     result = 0
 
     for row in values.findall_int():

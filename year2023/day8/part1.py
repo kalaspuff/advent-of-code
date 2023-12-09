@@ -1,8 +1,8 @@
 from values import values
 
 
-async def run():
-    instructions = values.rows[0]
+async def run() -> int:
+    instructions = values[0]
     node_connections = {node: connections for node, *connections in values[2:].findall_alphanum()}
 
     current_node = "AAA"

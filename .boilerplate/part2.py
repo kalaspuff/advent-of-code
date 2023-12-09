@@ -20,9 +20,10 @@ from matrix import Matrix
 from values import Values, values
 
 # https://docs.python.org/3/library/itertools.html
+# https://docs.python.org/3/library/collections.html
 
 
-async def run():
+async def run() -> int:
     result = 0
 
     for row in values.rows:
