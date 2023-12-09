@@ -205,12 +205,16 @@ def assign(name: str, value: Any) -> None:
 #
 # sys.exit(0)
 
-ValuesIntT = TypeVar("ValuesIntT", "ValuesRow", str)
-ValuesSliceT = TypeVar("ValuesSliceT", "ValuesSlice", str)
+ValuesIntT = TypeVar("ValuesIntT", "ValuesRow", "Values[str, str]", str)
+ValuesSliceT = TypeVar("ValuesSliceT", "Values[ValuesRow, ValuesSlice]", "ValuesSlice", str)
 
 
 class Values(Generic[ValuesIntT, ValuesSliceT]):
-    def __init__(self, *input_: Any) -> None:
+    def __new__(cls, *input_: AcceptedTypes) -> ValuesSlice:
+        instance = super().__new__(cls)
+        return cast(ValuesSlice, instance)
+
+    def __init__(self, *input_: AcceptedTypes) -> None:
         self.attrs: list[str] = ["year", "day", "part", "input_filename", "elapsed_time"]
         self.input_: str = ""
         self.result: Any = []
@@ -274,34 +278,26 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def __getitem__(self, value: slice) -> ValuesSliceT:
         ...
 
-    # @overload
-    # def __getitem__(self, value: slice | int) -> Values[ValuesIntT, ValuesSliceT]:
-    #     ...
-
-    def __getitem__(self, value: slice | int) -> Values | ValuesIntT | ValuesSliceT:
+    def __getitem__(self, value: slice | int) -> ValuesRow | ValuesSlice | ValuesIntT | ValuesSliceT:
         try:
             if self._single_row and self._index is None:
                 return cast(ValuesIntT, self.input[value])
 
             _ = self.rows[value]  # trigger IndexError if out of bounds
+            values: ValuesRow | ValuesSlice  # ValuesRow | Values[ValuesRow, ValuesSlice]
+            if isinstance(value, int):
+                values = cast(ValuesRow, Values())
+                values._single_row = True
+            else:
+                values = cast(ValuesSlice, Values())
 
-            # print(
-            #     self._index,
-            #     value,
-            #     self._slice,
-            #     self._next_slice,
-            #     "starred=True" if self._starred_assignment else "starred=False",
-            # )
-            values: Values = cast(ValuesRow | ValuesSlice, Values())
             values._origin = self
             values._slice = value if isinstance(value, slice) else slice(value, (value + 1) if value != -1 else None)
-            if self._index is not None and isinstance(value, slice):
-                # values._next_slice = slice(
-                #     value.start - self._index, None if value.stop is None else value.stop - self._index, value.step
-                # )
-                self._starred_assignment = values
-            if isinstance(value, int):
-                values._single_row = True
+            # if self._index is not None and isinstance(value, slice):
+            # values._next_slice = slice(
+            #     value.start - self._index, None if value.stop is None else value.stop - self._index, value.step
+            # )
+            # self._starred_assignment = values
             return values
         finally:
             self._sized = True
@@ -316,8 +312,8 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def __str__(self) -> str:
         return str(self.input)
 
-    def __iter__(self) -> Iterator[Values]:
-        iterator = self[self._index or 0 :]
+    def __iter__(self) -> Iterator[ValuesIntT]:
+        iterator: Iterator[ValuesIntT] = cast(Iterator[ValuesIntT], self[self._index or 0 :])
         if not isinstance(iterator, Values):
             raise Exception("invalid iterator")
         iterator._origin_iterator = self
@@ -326,17 +322,17 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         iterator._iter_returned = []
         return iterator
 
-    def __next__(self) -> Values:
+    def __next__(self: Values[ValuesIntT, ValuesSliceT]) -> ValuesIntT:
         self._sized = False
         if self._index is None:
             raise Exception("iterator is not initialized - initialize with iter(...)")
 
         _index = self._index
         if _index >= len(self.rows):
-            if self._starred_assignment:
-                self._starred_assignment._next_slice = None
-                self._starred_assignment = None
-            self._next_slice = None
+            # if self._starred_assignment:
+            #     self._starred_assignment._next_slice = None
+            #     self._starred_assignment = None
+            # self._next_slice = None
             # print("***")
             # print(self._starred_assignment[-1])
             # print("***")
@@ -345,12 +341,13 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             # print("***")
             # print("***")
             raise StopIteration
-        if self._next_slice is not None:
-            values = cast(Values, self[self._next_slice])
-            self._index = _index + len(values.rows)
-        else:
-            values = cast(Values, self[_index])
-            self._index = _index + 1
+        # values: ValuesSlice | ValuesRow
+        # if self._next_slice is not None:
+        #    values = cast(ValuesSlice, self[self._next_slice])
+        #    self._index = _index + len(values.rows)
+        # else:
+        values = cast(ValuesIntT, self[_index])
+        self._index = _index + 1
         if self._iter_returned is not None:
             self._iter_returned.append(values)
         return values
@@ -389,13 +386,13 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         raise NotImplementedError
 
     def __copy__(self) -> Self:
-        values = Values()
+        values = cast(Self, Values())
         values._origin = self
         values._reversed = self._reversed
         return values
 
     def __deepcopy__(self, memo: dict) -> Self:
-        values = Values()
+        values = cast(Self, Values())
         values._rows = self.rows[:: -1 if self._reversed else 1]
         values.input_ = self.input[:: -1 if self._reversed else 1]
         if self._reversed:
@@ -524,7 +521,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         ] = None,
     ) -> list[Any]:
         transform_ = tuple(transform) if isinstance(transform, (tuple, list, Iterable)) else transform
-        return match_rows(self.rows[start:], regexp, transform=transform_)
+        return match_rows(self.rows, regexp, transform=transform_)
 
     @overload
     def findall_rows(self, regexp: str, transform: tuple[Callable[..., T1]]) -> list[tuple[T1]]:
@@ -772,12 +769,19 @@ Collection.register(Values)
 Reversible.register(Values)
 
 
-class ValuesSlice(Values["ValuesRow", "ValuesSlice"]):
-    ...
+ValuesRow = Values[str, str]
+ValuesSlice = Values[ValuesRow, "ValuesSlice"]
 
+AcceptedTypes = (
+    str
+    | list["AcceptedTypes"]
+    | tuple["AcceptedTypes", ...]
+    | Sequence["AcceptedTypes"]
+    | Iterator["AcceptedTypes"]
+    | ValuesRow
+    | ValuesSlice
+    | Values[Any, Any]
+    | Values
+)
 
-class ValuesRow(Values[str, str]):
-    ...
-
-
-values: ValuesSlice = cast(ValuesSlice, Values())
+values: ValuesSlice = Values()
