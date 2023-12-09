@@ -20,6 +20,7 @@ from typing import (
     Reversible,
     Self,
     Sequence,
+    SupportsIndex,
     Tuple,
     Type,
     TypeVar,
@@ -312,6 +313,9 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def __str__(self) -> str:
         return str(self.input)
 
+    def __int__(self) -> int:
+        return int(self.input)
+
     def __iter__(self) -> Iterator[ValuesIntT]:
         iterator: Iterator[ValuesIntT] = cast(Iterator[ValuesIntT], self[self._index or 0 :])
         if not isinstance(iterator, Values):
@@ -352,24 +356,19 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             self._iter_returned.append(values)
         return values
 
-    def __add__(self, other):
-        print("__ADD__")
-        raise NotImplementedError
+    def __add__(self, other: AcceptedTypes) -> ValuesSlice:
+        return Values(self, other)
 
-    def __radd__(self, other):
-        print("__RADD__")
-        raise NotImplementedError
+    def __radd__(self, other: AcceptedTypes) -> ValuesSlice:
+        return Values(other, self)
 
-    def __iadd__(self, other):
-        print("__IADD__")
-        raise NotImplementedError
+    def __iadd__(self, other: AcceptedTypes) -> ValuesSlice:
+        return Values(self, other)
 
     def __delitem__(self, key):
-        print("__DELITEM__")
         raise NotImplementedError
 
     def __setitem__(self, key, value):
-        print("__SETITEM__")
         raise NotImplementedError
 
     def __reversed__(self) -> Self:
@@ -381,9 +380,9 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         values._reversed = not self._reversed
         return values
 
-    def __contains__(self, item) -> bool:
-        print("__CONTAINS__")
-        raise NotImplementedError
+    def __contains__(self, item: str | int) -> bool:
+        item_ = str(item)
+        return item_ in self.input if self._single_row else item_ in self.rows
 
     def __copy__(self) -> Self:
         values = cast(Self, Values())
@@ -400,11 +399,28 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             values._slice = slice(None, None, -1)
         return values
 
-    def count(self, value):
-        print("COUNT")
+    def count(self, sub: str, start: Optional[SupportsIndex] = None, end: Optional[SupportsIndex] = None) -> int:
+        if self._single_row:
+            return self.input.count(sub, start, end)
 
-    def index(self, value):
-        print("INDEX")
+        end = min(int(cast(int, end or len(self.rows))), len(self.rows))
+        start = int(cast(int, start or 0))
+        count = 0
+        for i in range(start, end):
+            if self.rows[i] == sub:
+                count += 1
+        return count
+
+    def index(self, sub: str, start: Optional[SupportsIndex] = None, end: Optional[SupportsIndex] = None) -> int:
+        if self._single_row:
+            return self.input.index(sub, start, end)
+
+        end = min(int(cast(int, end or len(self.rows))), len(self.rows))
+        start = int(cast(int, start or 0))
+        for i in range(start, end):
+            if self.rows[i] == sub:
+                return i
+        raise ValueError("substring not found")
 
     def seek(self, index: int) -> Self:
         self._index = index
@@ -785,3 +801,40 @@ AcceptedTypes = (
 )
 
 values: ValuesSlice = Values()
+
+
+# Some Regular expression examples:
+#
+# Positive Integers:
+#
+# ^\d+$
+# Negative Integers:
+#
+# ^-\d+$
+# Integer:
+#
+# ^-?\d+$
+# Positive Number:
+#
+# ^\d*\.?\d+$
+# Negative Number:
+#
+# ^-\d*\.?\d+$
+# Positive Number or Negative Number:
+#
+# ^-?\d*\.{0,1}\d+$
+# Phone number:
+#
+# ^\+?[\d\s]{3,}$
+# Phone with code:
+#
+# ^\+?[\d\s]+\(?[\d\s]{10,}$
+# Year 1900-2099:
+#
+# ^(19|20)[\d]{2,2}$
+# Date (dd mm yyyy, d/m/yyyy, etc.):
+#
+# ^([1-9]|0[1-9]|[12][0-9]|3[01])\D([1-9]|0[1-9]|1[012])\D(19[0-9][0-9]|20[0-9][0-9])$
+# IP v4:
+#
+# ^(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]){3}$
