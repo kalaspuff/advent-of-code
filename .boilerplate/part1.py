@@ -2,15 +2,18 @@ import functools
 import itertools
 import math
 import re
-from collections import deque
+from collections import Counter, deque
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, TypeVar, Union
 
 import helpers
 from helpers import (
+    batched,
     inverse,
     inverse_dict,
     manhattan_distance,
     multisplit,
+    paired,
+    pairwise,
     transform,
     transform_dict,
     transform_tuple,
@@ -57,6 +60,15 @@ if False:
     pos = (5, 6)
     for mod in itertools.product([-1, 0, 1], [-1, 0, 1]):
         pos_ = tuple_add(pos, mod)
+
+    # > Counter operations
+    # input: "123ABC1232"
+    # output: [('2', 3), ('1', 2), ('3', 2), ('A', 1), ('B', 1), ('C', 1)]
+    Counter("123ABC1232").most_common()
+
+    # > other useful methods
+    values.findall_int()
+    values.findall_alphanum()
 
 
 # https://docs.python.org/3/library/itertools.html
