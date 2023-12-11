@@ -394,23 +394,60 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
                 values[x][y] = char
         return cast(ValuesSlice, values)
 
+    @overload
+    def ints(self: ValuesSlice) -> list[tuple[int, ...]]:
+        ...
+
+    @overload
+    def ints(self: ValuesRow) -> tuple[int, ...]:
+        ...
+
     def ints(self) -> tuple[int, ...] | list[tuple[int, ...]]:
         if self._single_row or len(self.origin) == 1:
             return tuple(int(value) for value in re.findall(r"(-?\d+)", self.input))
         return self.findall_ints()
+
+    @overload
+    def alphanums(self: ValuesSlice) -> list[tuple[str, ...]]:
+        ...
+
+    @overload
+    def alphanums(self: ValuesRow) -> tuple[str, ...]:
+        ...
 
     def alphanums(self) -> tuple[str, ...] | list[tuple[str, ...]]:
         if self._single_row or len(self.origin) == 1:
             return tuple(value for value in re.findall(r"([a-zA-Z0-9]+)", self.input))
         return self.findall_alphanums()
 
-    def split(self, sep: str = " ", maxsplit: int = -1) -> list[str] | list[list[str]]:
+    @overload
+    def digits(self: ValuesSlice) -> list[tuple[int, ...]]:
+        ...
+
+    @overload
+    def digits(self: ValuesRow) -> tuple[int, ...]:
+        ...
+
+    def digits(self) -> tuple[int, ...] | list[tuple[int, ...]]:
+        if self._single_row or len(self.origin) == 1:
+            return tuple(int(value) for value in re.findall(r"(\d)", self.input))
+        return self.findall_digits()
+
+    @overload
+    def split(self: ValuesSlice, sep: str = " ", maxsplit: int = -1) -> list[tuple[str, ...]]:
+        ...
+
+    @overload
+    def split(self: ValuesRow, sep: str = " ", maxsplit: int = -1) -> tuple[str, ...]:
+        ...
+
+    def split(self, sep: str = " ", maxsplit: int = -1) -> tuple[str, ...] | list[tuple[str, ...]]:
         if self._single_row or len(self.origin) == 1:
             return self.split_input(sep, maxsplit)
         return [value.split_input(sep, maxsplit) for value in values]
 
-    def split_input(self, sep: str = " ", maxsplit: int = -1) -> list[str]:
-        return self.input.split(sep, maxsplit)
+    def split_input(self, sep: str = " ", maxsplit: int = -1) -> tuple[str, ...]:
+        return tuple(self.input.split(sep, maxsplit))
 
     def __add__(self, other: AcceptedTypes) -> ValuesSlice:
         return Values(self, other)
@@ -736,6 +773,9 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
 
     def findall_int(self) -> list[tuple[int, ...]]:
         return self.findall_ints()
+
+    def findall_digits(self) -> list[tuple[int, ...]]:
+        return self.findall_rows(r"(\d)", int)
 
     def findall_alphanums(self) -> list[tuple[str, ...]]:
         return self.findall_rows(r"([a-zA-Z0-9]+)", transform=str)

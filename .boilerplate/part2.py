@@ -2,15 +2,20 @@ import functools
 import itertools
 import math
 import re
-from collections import deque
+from collections import Counter, deque
+from itertools import combinations, permutations, product
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, TypeVar, Union
 
 import helpers
 from helpers import (
+    batched,
     inverse,
     inverse_dict,
     manhattan_distance,
     multisplit,
+    paired,
+    pairwise,
+    position_ranges,
     transform,
     transform_dict,
     transform_tuple,

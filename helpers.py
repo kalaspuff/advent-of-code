@@ -3,6 +3,7 @@ import functools
 import itertools
 import re
 from collections import Counter, deque
+from itertools import combinations, permutations, product
 from types import GenericAlias as _GenericAlias
 from typing import (
     Annotated,
@@ -189,12 +190,25 @@ def binary_space_partitioning(
 
 
 def manhattan_distance(
-    pos_1: Union[tuple[int, ...], tuple[int, int], map], pos_2: Union[tuple[int, ...], tuple[int, int], map]
+    pos_1: Union[tuple[int, ...], tuple[int, int], map, range],
+    pos_2: Union[tuple[int, ...], tuple[int, int], map, range],
 ) -> int:
     # also known as manhattan length, snake distance, taxicab metric, etc.
+    if isinstance(pos_1, range) and isinstance(pos_2, range):
+        return abs(pos_1.start - pos_1.stop) + abs(pos_2.start - pos_2.stop)
     pos_1 = tuple(pos_1) if isinstance(pos_1, map) else pos_1
     pos_2 = tuple(pos_1) if isinstance(pos_2, map) else pos_2
     return max(pos_1[0], pos_2[0]) - min(pos_1[0], pos_2[0]) + max(pos_1[1], pos_2[1]) - min(pos_1[1], pos_2[1])
+
+
+def position_ranges(
+    pos_1: Union[tuple[int, ...], tuple[int, int], map], pos_2: Union[tuple[int, ...], tuple[int, int], map]
+) -> tuple[range, range]:
+    pos_1 = tuple(pos_1) if isinstance(pos_1, map) else pos_1
+    pos_2 = tuple(pos_1) if isinstance(pos_2, map) else pos_2
+    return range(min(pos_1[0], pos_2[0]), max(pos_1[0], pos_2[0])), range(
+        min(pos_1[1], pos_2[1]), max(pos_1[1], pos_2[1])
+    )
 
 
 def int_minus(value: Any, mod: Union[int, str] = 1) -> int:
