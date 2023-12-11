@@ -1,33 +1,22 @@
-import functools
 import itertools
-import math
-import re
-from collections import deque
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, TypeVar, Union
 
-import helpers
-from helpers import (
-    inverse,
-    inverse_dict,
-    manhattan_distance,
-    multisplit,
-    transform,
-    transform_dict,
-    transform_tuple,
-    tuple_add,
-)
-from matrix import Matrix
-from values import Values, values
-
-# https://docs.python.org/3/library/itertools.html
-# https://docs.python.org/3/library/collections.html
+from helpers import manhattan_distance
+from values import values
 
 
 async def run() -> int:
     result = 0
 
-    for row in values.rows:
-        pass
+    multi = 1000000
+    rows_without_galaxies = [i for i, row in enumerate(values) if "#" not in row]
+    cols_without_galaxies = [i for i, row in enumerate(values.rotate()) if "#" not in row]
+
+    galaxies = values.matrix.position("#")
+    for pair in itertools.combinations(galaxies, 2):
+        from_, to_ = pair
+        extra_x = sum(multi - 1 if from_[0] < n < to_[0] or to_[0] < n < from_[0] else 0 for n in cols_without_galaxies)
+        extra_y = sum(multi - 1 if from_[1] < n < to_[1] or to_[1] < n < from_[1] else 0 for n in rows_without_galaxies)
+        result += manhattan_distance(from_, to_) + (extra_x + extra_y)
 
     return result
 
@@ -37,4 +26,4 @@ async def run() -> int:
 # [values.part]            (number)  2
 # [values.input_filename]  (str)     ./year2023/day11/input
 #
-# Result: ...
+# Result: 298932923702

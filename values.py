@@ -386,6 +386,14 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         values = cast(ValuesRow, self.pop(0))
         return cast(ValuesIntT, values)
 
+    def rotate(self) -> ValuesSlice:
+        max_len = max(len(row) for row in self.rows)
+        values = Values.create_rows(max_len)
+        for y, row in enumerate(self.rows):
+            for x, char in enumerate(row):
+                values[x][y] = char
+        return cast(ValuesSlice, values)
+
     def ints(self) -> tuple[int, ...] | list[tuple[int, ...]]:
         if self._single_row or len(self.origin) == 1:
             return tuple(int(value) for value in re.findall(r"(-?\d+)", self.input))
