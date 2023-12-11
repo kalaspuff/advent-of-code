@@ -33,7 +33,7 @@ async def run() -> int:
     matrix[start_pos] = START_PIPE_MAP[frozenset(start_directions)]
 
     direction = start_directions.pop()
-    visited_nodes = set()
+    visited_nodes: set[tuple[int, int]] = set()
     position = start_pos
     while position not in visited_nodes:
         visited_nodes.add(position)
@@ -48,12 +48,9 @@ async def run() -> int:
             case "F":
                 direction = (0, 1) if direction == (-1, 0) else (1, 0)
 
-    zoomed_matrix = Matrix(None, 2 + matrix.width * 2, 2 + matrix.height * 2, fill=".")
+    zoomed_matrix = matrix.zoom(coordinates=visited_nodes)
     for pos in visited_nodes:
-        if pos not in visited_nodes:
-            continue
-        pos_ = tuple_add(tuple_add(pos, pos), (2, 2))
-        zoomed_matrix[pos_] = matrix[pos]
+        pos_ = tuple_add(pos, pos)
         if matrix[pos] in ("-", "L", "F"):
             zoomed_matrix[tuple_add(pos_, (1, 0))] = "-"
         if matrix[pos] in ("|", "7", "F"):
@@ -61,29 +58,21 @@ async def run() -> int:
 
     positions: set[tuple[int, int]] = {(0, 0)}
     possible_positions = set(zoomed_matrix.position("."))
+    traversed_positions = set()
 
     while positions:
         pos = positions.pop()
-        possible_positions.remove(pos)
+        traversed_positions.add(pos)
         zoomed_matrix[pos] = "0"
-        if pos >= (2, 2) and pos[0] % 2 == 0 and pos[1] % 2 == 0:
-            x, y = pos
-            matrix[pos[0] // 2 - 1, pos[1] // 2 - 1] = "."
         for mod in itertools.product([-1, 0, 1], [-1, 0, 1]):
             pos_ = tuple_add(pos, mod)
-            if pos_ in possible_positions:
+            if pos_ in possible_positions and pos_ not in traversed_positions:
                 positions.add(pos_)
 
-    enclosed_position_count = 0
-    for x in range(0, zoomed_matrix.width, 2):
-        for y in range(0, zoomed_matrix.height, 2):
-            if zoomed_matrix[x, y] == ".":
-                matrix[(x // 2) - 1, (y // 2) - 1] = "I"
-                enclosed_position_count += 1
+    result_matrix = zoomed_matrix.replace(".", "I").replace("0", ".").zoom_out()
+    print(result_matrix)
 
-    print(matrix)
-
-    return enclosed_position_count
+    return result_matrix.count("I")
 
 
 # [values.year]            (number)  2023

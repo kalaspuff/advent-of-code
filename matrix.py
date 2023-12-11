@@ -17,25 +17,8 @@ from typing import (
     overload,
 )
 
-# class DEFAULT:
-#    pass
-
-
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
-
-# class DefaultValue__:
-#     @overload
-#     def __class_getitem__(cls) -> DefaultValue:
-#         ...
-#
-#     @overload
-#     def __class_getitem__(cls, *item: T) -> DEFAULT[T] | T:
-#         ...
-#
-#     def __class_getitem__(cls, *item: T) -> DEFAULT[T] | T | DefaultValue:
-#         return cast(DEFAULT[T], cls)
-#         ...
 
 
 class DEFAULT(Generic[T]):
@@ -70,10 +53,6 @@ class DEFAULT(Generic[T]):
     def __new__(cls, item: Any = None) -> Any:
         if item is None:
             return super().__new__(cls)
-        #             if cls.__singleton__ is None and cls.__init_singleton__ is False:
-        #                 cls.__init_singleton__ = True
-        #                 cls.__singleton__ = DefaultValue()
-        #            return cls.__singleton__
         cls.__args__ = (item,) if item else ()
         return item
 
@@ -106,24 +85,6 @@ class DEFAULT(Generic[T]):
 class DefaultValue(DEFAULT):
     def __new__(cls) -> Any:
         return super().__new__(cls)
-        # instance = cls()
-        # return instance
-
-
-#    @overload
-#    def __class_getitem__(cls) -> DefaultValue:
-#        ...
-#
-#    @overload
-#    def __class_getitem__(cls, *item: T) -> T:
-#        ...
-#
-#    def __class_getitem__(cls, *item: Any) -> Any:
-#        return cast(T, cls)
-#        ...
-#
-#    def __new__(cls, item: Any = None) -> DefaultValue:
-#        ...
 
 
 FILL_SENTINEL = object()
@@ -235,7 +196,7 @@ class Matrix:
         right: Optional[int] = None,
         top: Optional[int] = None,
         bottom: Optional[int] = None,
-    ):
+    ) -> Matrix:
         fill = self._fill if fill is FILL_SENTINEL else fill
 
         if size is not None:
@@ -266,7 +227,49 @@ class Matrix:
         if bottom is not None:
             rows += [fill * width] * bottom
 
-        return Matrix(rows, options=self._options)
+        return Matrix(rows, fill=fill, options=self._options)
+
+    def zoom(
+        self,
+        zoom: int = 2,
+        fill: Any = FILL_SENTINEL,
+        coordinates: Optional[
+            set[tuple[int, int]] | list[tuple[int, int]] | tuple[tuple[int, int], ...] | dict[tuple[int, int], Any]
+        ] = None,
+    ) -> Matrix:
+        if zoom < 1 and zoom == 0.5:
+            return self.zoom_out()
+        if zoom < 2:
+            raise ValueError("zoom must be 2 or greater")
+        fill = self._fill if fill is FILL_SENTINEL else fill
+        matrix = Matrix(None, self.width * 2, self.height * 2, fill=fill)
+        coordinates_ = self.coordinates if coordinates is None else coordinates
+        if not isinstance(coordinates_, dict):
+            coordinates_ = {pos: self[pos] for pos in coordinates_}
+        for pos, char in coordinates_.items():
+            pos_ = pos[0] * 2, pos[1] * 2
+            matrix[*pos_] = char
+        return matrix
+
+    def zoom_out(
+        self,
+    ) -> Matrix:
+        matrix = Matrix(None, self.width // 2, self.height // 2, fill=self._fill)
+        for pos, char in self.coordinates.items():
+            if pos[0] % 2 != 0 or pos[1] % 2 != 0:
+                continue
+            pos_ = pos[0] // 2, pos[1] // 2
+            matrix[*pos_] = char
+        return matrix
+
+    def replace(self, old: Any, new: Any) -> Matrix:
+        matrix = Matrix(self)
+        for pos in self.position(old):
+            matrix[pos] = new
+        return matrix
+
+    def count(self, value: Any) -> int:
+        return len(self.position(value))
 
     def y(self, value, to_value=None):
         if to_value is None:
