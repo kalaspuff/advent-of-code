@@ -1,10 +1,9 @@
 from helpers import tuple_add
-from matrix import Matrix
 from values import values
 
 
 async def run() -> int:
-    matrix = Matrix(["."] + [f".{row}." for row in values.rows] + ["."], width=len(values[0]) + 2, fill=".")
+    matrix = values.matrix.pad(1, ".")
     start_pos = matrix.pos_first("S")
 
     direction: tuple[int, int]

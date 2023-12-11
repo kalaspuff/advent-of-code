@@ -2,29 +2,170 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Optional
+from typing import (
+    Annotated,
+    Any,
+    ClassVar,
+    Generic,
+    Literal,
+    Optional,
+    Protocol,
+    TypeAlias,
+    TypeVar,
+    Unpack,
+    cast,
+    overload,
+)
+
+# class DEFAULT:
+#    pass
+
+
+T = TypeVar("T")
+T_co = TypeVar("T_co", covariant=True)
+
+# class DefaultValue__:
+#     @overload
+#     def __class_getitem__(cls) -> DefaultValue:
+#         ...
+#
+#     @overload
+#     def __class_getitem__(cls, *item: T) -> DEFAULT[T] | T:
+#         ...
+#
+#     def __class_getitem__(cls, *item: T) -> DEFAULT[T] | T | DefaultValue:
+#         return cast(DEFAULT[T], cls)
+#         ...
+
+
+class DEFAULT(Generic[T]):
+    __args__: tuple[()] | tuple[T]
+    __singleton__: Optional[DefaultValue] = None
+    __init_singleton__: bool = False
+
+    @overload
+    def __new__(cls, item: Literal[False]) -> DEFAULT[Literal[False]]:
+        ...
+
+    @overload
+    def __new__(cls, item: Literal[True]) -> DEFAULT[Literal[True]]:
+        ...
+
+    @overload
+    def __new__(cls, item: Literal[None]) -> DEFAULT[Literal[None]]:
+        ...
+
+    @overload
+    def __new__(cls, item: type[T]) -> DEFAULT[type[T]]:
+        ...
+
+    @overload
+    def __new__(cls, item: T) -> DEFAULT[T]:
+        ...
+
+    @overload
+    def __new__(cls) -> DefaultValue:
+        ...
+
+    def __new__(cls, item: Any = None) -> Any:
+        if item is None:
+            return super().__new__(cls)
+        #             if cls.__singleton__ is None and cls.__init_singleton__ is False:
+        #                 cls.__init_singleton__ = True
+        #                 cls.__singleton__ = DefaultValue()
+        #            return cls.__singleton__
+        cls.__args__ = (item,) if item else ()
+        return item
+
+    @overload
+    def __eq__(
+        self: DEFAULT[Literal[True]] | Literal[True], other: DEFAULT[Literal[True]] | Literal[True]
+    ) -> Literal[True]:
+        ...
+
+    @overload
+    def __eq__(
+        self: DEFAULT[Literal[False]] | Literal[False], other: DEFAULT[Literal[False]] | Literal[False]
+    ) -> Literal[True]:
+        ...
+
+    @overload
+    def __eq__(self, other: T | DEFAULT[T]) -> Literal[True]:
+        ...
+
+    @overload
+    def __eq__(self, other: Any) -> Literal[False]:
+        ...
+
+    def __eq__(self, other: Any) -> bool:
+        if self is other:
+            return True
+        return False
+
+
+class DefaultValue(DEFAULT):
+    def __new__(cls) -> Any:
+        return super().__new__(cls)
+        # instance = cls()
+        # return instance
+
+
+#    @overload
+#    def __class_getitem__(cls) -> DefaultValue:
+#        ...
+#
+#    @overload
+#    def __class_getitem__(cls, *item: T) -> T:
+#        ...
+#
+#    def __class_getitem__(cls, *item: Any) -> Any:
+#        return cast(T, cls)
+#        ...
+#
+#    def __new__(cls, item: Any = None) -> DefaultValue:
+#        ...
+
 
 FILL_SENTINEL = object()
 VALUE_SENTINEL = object()
+DEFAULT_OPTIONS = {"infinite_x": False, "infinite_y": False}
+DEFAULT_VALUE = DEFAULT()
 
 
 class Matrix:
     _coordinates: dict[tuple[int, int], Any]
-    _options = None
-    _empty = None
+    _options: dict[str, Any]
     rows: list[list[Any]]
 
-    def __init__(self, rows, width=None, height=None, fill=FILL_SENTINEL, *, infinite_x=None, infinite_y=None):
+    def __init__(
+        self,
+        rows,
+        width=None,
+        height=None,
+        fill=FILL_SENTINEL,
+        *,
+        options: Optional[dict[str, bool]] = None,
+        infinite_x: bool | DEFAULT[Literal[True]] = DEFAULT_VALUE,
+        infinite_y: bool | DEFAULT[Literal[True]] = DEFAULT_VALUE,
+    ):
+        options_: dict[str, Any] = DEFAULT_OPTIONS.copy()
         if isinstance(rows, Matrix):
             input_matrix = rows
             rows = input_matrix.rows
             fill = input_matrix._fill if fill is FILL_SENTINEL else fill
-            infinite_x = infinite_x if infinite_x is not None else bool("infinite_x" in input_matrix._options)
-            infinite_y = infinite_y if infinite_y is not None else bool("infinite_y" in input_matrix._options)
+            options_ = {**options_, **input_matrix._options}
+
+        if options is not None:
+            options_ = {**options_, **options}
+
+        if infinite_x is not DEFAULT_VALUE:
+            options_["infinite_x"] = bool(infinite_x)
+        if infinite_y is not DEFAULT_VALUE:
+            options_["infinite_y"] = bool(infinite_y)
 
         self._coordinates = {}
         self.rows = (list(rows) if isinstance(rows, (list, tuple)) else rows.split("\n")) if rows else []
-        self._options = set()
+        self._options: dict[str, Any] = options_
         self._fill = " " if fill is FILL_SENTINEL else fill
 
         while height is not None and height > len(self.rows):
@@ -44,15 +185,14 @@ class Matrix:
                     new_rows.append(row)
             self.rows = new_rows
 
-        if infinite_x:
-            self._options.add("infinite_x")
-        if infinite_y:
-            self._options.add("infinite_y")
-
-    def options(self, infinite_x=None, infinite_y=None):
-        infinite_x = infinite_x if infinite_x is not None else bool("infinite_x" in self._options)
-        infinite_y = infinite_y if infinite_y is not None else bool("infinite_y" in self._options)
-        return Matrix(self, infinite_x=infinite_x, infinite_y=infinite_y)
+    def options(
+        self,
+        options: Optional[dict[str, Any]] = None,
+        *,
+        infinite_x: bool | DEFAULT[Literal[True]] = DEFAULT_VALUE,
+        infinite_y: bool | DEFAULT[Literal[True]] = DEFAULT_VALUE,
+    ):
+        return Matrix(self, options=options, infinite_x=infinite_x, infinite_y=infinite_y)
 
     @property
     def coordinates(self) -> dict[tuple[int, int], Any]:
@@ -86,6 +226,47 @@ class Matrix:
     @property
     def max_y(self) -> int:
         return (self.height - 1) if self.rows else 0
+
+    def pad(
+        self,
+        size: Optional[int] = None,
+        fill: Any = FILL_SENTINEL,
+        left: Optional[int] = None,
+        right: Optional[int] = None,
+        top: Optional[int] = None,
+        bottom: Optional[int] = None,
+    ):
+        fill = self._fill if fill is FILL_SENTINEL else fill
+
+        if size is not None:
+            if (left or size) + (right or size) != size * 2:
+                raise ValueError(f"invalid padding: {left} + {right} != {size * 2} (left + right != size * 2)")
+            if (top or size) + (bottom or size) != size * 2:
+                raise ValueError(f"invalid padding: {top} + {bottom} != {size * 2} (top + bottom != size * 2)")
+            left = right = top = bottom = size
+        if left is None and right is None and top is None and bottom is None:
+            left = right = top = bottom = size = 1
+        left = left or 0
+        right = right or 0
+        top = top or 0
+        bottom = bottom or 0
+
+        width = self.width + left + right
+
+        rows = []
+        if top is not None:
+            rows += [fill * width] * top
+        for row in self.rows:
+            if not isinstance(fill, str) and isinstance(row, str):
+                raise ValueError("invalid fill type: cannot pad a string row with a non-string fill")
+            row_ = [fill] * left + list(row) + [fill] * right
+            if isinstance(row, str):
+                row_ = "".join(row_)
+            rows.append(row_)
+        if bottom is not None:
+            rows += [fill * width] * bottom
+
+        return Matrix(rows, options=self._options)
 
     def y(self, value, to_value=None):
         if to_value is None:
@@ -242,9 +423,9 @@ class Matrix:
 
         x_, y_ = args
 
-        while "infinite_x" in self._options and x_ > self.max_x:
+        while self._options.get("infinite_x") and x_ > self.max_x:
             x_ -= self.width
-        while "infinite_y" in self._options and y_ > self.max_y:
+        while self._options.get("infinite_y") and y_ > self.max_y:
             y_ -= self.height
 
         try:
@@ -315,9 +496,9 @@ class Matrix:
         else:
             x_, y_, value = args
 
-        while "infinite_x" in self._options and x_ > self.max_x:
+        while self._options.get("infinite_x") and x_ > self.max_x:
             x_ -= self.width
-        while "infinite_y" in self._options and y_ > self.max_y:
+        while self._options.get("infinite_y") and y_ > self.max_y:
             y_ -= self.height
 
         try:

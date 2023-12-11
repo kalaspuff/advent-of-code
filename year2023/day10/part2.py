@@ -4,32 +4,33 @@ from helpers import tuple_add
 from matrix import Matrix
 from values import values
 
+START_DIRECTION_MAP = {
+    (1, 0): ("-", "J", "7"),
+    (0, 1): ("|", "J", "L"),
+    (-1, 0): ("-", "L", "F"),
+    (0, -1): ("|", "7", "F"),
+}
+
+START_PIPE_MAP = {
+    frozenset({(1, 0), (-1, 0)}): "-",
+    frozenset({(0, 1), (0, -1)}): "|",
+    frozenset({(1, 0), (0, -1)}): "L",
+    frozenset({(1, 0), (0, 1)}): "F",
+    frozenset({(0, -1), (-1, 0)}): "J",
+    frozenset({(0, 1), (-1, 0)}): "7",
+}
+
 
 async def run() -> int:
-    matrix = Matrix(["."] + [f".{row}." for row in values.rows] + ["."], width=len(values[0]) + 2, fill=".")
+    matrix = values.matrix.pad(1, ".")
     start_pos = matrix.pos_first("S")
 
-    start_direction_map = {
-        (1, 0): ("-", "J", "7"),
-        (0, 1): ("|", "J", "L"),
-        (-1, 0): ("-", "L", "F"),
-        (0, -1): ("|", "7", "F"),
-    }
-    start_pipe_map = {
-        frozenset({(1, 0), (-1, 0)}): "-",
-        frozenset({(0, 1), (0, -1)}): "|",
-        frozenset({(1, 0), (0, -1)}): "L",
-        frozenset({(1, 0), (0, 1)}): "F",
-        frozenset({(0, -1), (-1, 0)}): "J",
-        frozenset({(0, 1), (-1, 0)}): "7",
-    }
-
     start_directions = set()
-    for direction, pipes in start_direction_map.items():
+    for direction, pipes in START_DIRECTION_MAP.items():
         if matrix[tuple_add(start_pos, direction)] in pipes:
             start_directions.add(direction)
 
-    matrix[start_pos] = start_pipe_map[frozenset(start_directions)]
+    matrix[start_pos] = START_PIPE_MAP[frozenset(start_directions)]
 
     direction = start_directions.pop()
     visited_nodes = set()
