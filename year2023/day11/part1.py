@@ -1,6 +1,6 @@
 import itertools
 
-from helpers import manhattan_distance
+from helpers import manhattan_distance, position_ranges
 from values import values
 
 
@@ -13,10 +13,10 @@ async def run() -> int:
 
     galaxies = values.matrix.position("#")
     for pair in itertools.combinations(galaxies, 2):
-        from_, to_ = pair
-        extra_x = sum(multi - 1 if from_[0] < n < to_[0] or to_[0] < n < from_[0] else 0 for n in cols_without_galaxies)
-        extra_y = sum(multi - 1 if from_[1] < n < to_[1] or to_[1] < n < from_[1] else 0 for n in rows_without_galaxies)
-        result += manhattan_distance(from_, to_) + (extra_x + extra_y)
+        range_x, range_y = position_ranges(*pair)
+        extra_x = sum(multi - 1 if n in range_x else 0 for n in cols_without_galaxies)
+        extra_y = sum(multi - 1 if n in range_y else 0 for n in rows_without_galaxies)
+        result += manhattan_distance(*pair) + (extra_x + extra_y)
 
     return result
 
