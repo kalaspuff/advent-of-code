@@ -247,11 +247,16 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
                 self.input_ = input_
             elif isinstance(input_, Values):
                 self.input_ = input_.input
-            elif isinstance(input_, (list, tuple, Sequence)):
-                if isinstance(input_, (list, tuple, Sequence)) and len(input_) == 1:
+            elif isinstance(input_, (list, tuple, deque, Sequence)):
+                if isinstance(input_, (list, tuple, deque, Sequence)) and len(input_) == 1:
                     input_ = input_[0]
                 if isinstance(input_, (Values, str)):
                     input_ = (input_,)
+                if isinstance(input_, (deque,)) and input_ and isinstance(input_[0], (deque,)):
+                    input_ = tuple(
+                        "".join(row_data) if isinstance(row_data, str) else "".join([Values(x).input for x in row_data])
+                        for row_data in input_
+                    )
                 rows: list[str] = []
                 for row_data in input_:
                     if isinstance(row_data, str):
@@ -975,6 +980,7 @@ AcceptedTypes = (
     str
     | list["AcceptedTypes"]
     | tuple["AcceptedTypes", ...]
+    | deque["AcceptedTypes"]
     | Sequence["AcceptedTypes"]
     | Iterator["AcceptedTypes"]
     | ValuesRow
