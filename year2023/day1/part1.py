@@ -4,9 +4,8 @@ from values import values
 async def run() -> int:
     result = 0
 
-    for row in values.rows:
-        digits = [c for c in row if c.isdigit()]
-        result += int(str(digits[0]) + str(digits[-1]))
+    for digits in values.digits():
+        result += digits[0] * 10 + digits[-1]
 
     return result
 
