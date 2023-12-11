@@ -468,6 +468,9 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         values._reversed = self._reversed
         return values
 
+    def copy(self) -> Self:
+        return self.__copy__()
+
     def __deepcopy__(self, memo: dict) -> Self:
         values = cast(Self, Values())
         values._rows = self.rows[:: -1 if self._reversed else 1]
@@ -476,6 +479,9 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             values._reversed = self._reversed
             values._slice = slice(None, None, -1)
         return values
+
+    def deepcopy(self) -> Self:
+        return self.__deepcopy__()
 
     def count(self, sub: str, start: Optional[SupportsIndex] = None, end: Optional[SupportsIndex] = None) -> int:
         if self._single_row:
