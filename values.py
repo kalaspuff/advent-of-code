@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import itertools
+import re
 import weakref
 from abc import ABCMeta, abstractmethod
 from types import GenericAlias as _GenericAlias
@@ -260,6 +261,10 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
                         rows.extend(Values(row_data).input_.split("\n"))
                 self.input_ = "\n".join(rows)
 
+    @classmethod
+    def create_rows(cls, row_count: int) -> Values:
+        return Values() * row_count
+
     def __setattr__(self, key: str, value: Any) -> None:
         super().__setattr__(key, value)
         if key not in ("attrs", "input_") and not key.startswith("_") and key not in self.attrs:
@@ -303,8 +308,8 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             self._sized = True
 
     def __len__(self) -> int:
-        if not self._sized:
-            raise NotImplementedError
+        # if not self._sized:
+        #    raise NotImplementedError
         if self._single_row:
             return len(self.input)
         return len(self.rows)
@@ -323,6 +328,10 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         iterator._sized = False
         iterator._index = 0
         iterator._iter_returned = []
+        return iterator
+
+    def iter(self) -> Iterator[ValuesIntT]:
+        iterator: Iterator[ValuesIntT] = self.__iter__()
         return iterator
 
     def __next__(self: Values[ValuesIntT, ValuesSliceT]) -> ValuesIntT:
@@ -355,6 +364,46 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             self._iter_returned.append(values)
         return values
 
+    def next(self) -> ValuesIntT:
+        return cast(ValuesIntT, next(self))
+
+    def pop(self, index: int = -1) -> ValuesIntT:
+        if index is None:
+            index = len(self) - 1
+        if self._single_row:
+            raise NotImplementedError("pop not implemented for single row values (strings)")
+        if index < 0:
+            index = len(self) + index
+        if index >= len(self):
+            raise IndexError("list assignment index out of range")
+        row = self.origin._rows.pop(self.row_index + index)
+        values = cast(ValuesRow, Values(row))
+        values._single_row = True
+        self._recalc_input()
+        return cast(ValuesIntT, values)
+
+    def popleft(self) -> ValuesIntT:
+        values = cast(ValuesRow, self.pop(0))
+        return cast(ValuesIntT, values)
+
+    def ints(self) -> tuple[int, ...] | list[tuple[int, ...]]:
+        if self._single_row or len(self.origin) == 1:
+            return tuple(int(value) for value in re.findall(r"(-?\d+)", self.input))
+        return self.findall_ints()
+
+    def alphanums(self) -> tuple[str, ...] | list[tuple[str, ...]]:
+        if self._single_row or len(self.origin) == 1:
+            return tuple(value for value in re.findall(r"([a-zA-Z0-9]+)", self.input))
+        return self.findall_alphanums()
+
+    def split(self, sep: str = " ", maxsplit: int = -1) -> list[str] | list[list[str]]:
+        if self._single_row or len(self.origin) == 1:
+            return self.split_input(sep, maxsplit)
+        return [value.split_input(sep, maxsplit) for value in values]
+
+    def split_input(self, sep: str = " ", maxsplit: int = -1) -> list[str]:
+        return self.input.split(sep, maxsplit)
+
     def __add__(self, other: AcceptedTypes) -> ValuesSlice:
         return Values(self, other)
 
@@ -364,11 +413,41 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def __iadd__(self, other: AcceptedTypes) -> ValuesSlice:
         return Values(self, other)
 
+    def __mul__(self, value: int) -> ValuesSlice:
+        return Values(*[self for _ in range(value)])
+
     def __delitem__(self, key):
         raise NotImplementedError
 
-    def __setitem__(self, key, value):
-        raise NotImplementedError
+    def __setitem__(self, key: slice | int, value):
+        if self._single_row:
+            row = cast(ValuesRow, self).rows[0]
+            if isinstance(key, int) and len(value) > 1:
+                raise ValueError("single key assignment with non-single string value (use slice assignment instead)")
+            from_ = key.start if isinstance(key, slice) else key
+            to_ = min(
+                (key.stop or from_ + len(value)) if isinstance(key, slice) else (from_ + key + 1), from_ + len(value)
+            )
+            if to_ - from_ < len(value):
+                value = value[: to_ - from_]
+            prepend = ""
+            if len(row[:from_]) < from_:
+                prepend = " " * (from_ - len(row[:from_]))
+            new_row = row[:from_] + prepend + value + row[to_:]
+            self.origin._rows[self.row_index] = new_row
+        else:
+            if isinstance(key, slice):
+                raise NotImplementedError("slice assignment not implemented")
+            if key < 0:
+                key = len(self) + key
+            if key >= len(self):
+                raise IndexError("list assignment index out of range")
+            self.origin._rows[self.row_index + key] = value
+        self._recalc_input()
+
+    def _recalc_input(self) -> None:
+        self.origin.input_ = "\n".join(self.origin._rows)
+        self.origin._rows = self.origin.input_.split("\n")
 
     def __reversed__(self) -> Self:
         values = self.__copy__()
@@ -428,9 +507,6 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def reset(self) -> Self:
         self.seek(0)
         return self
-
-    def split(self, split_value: str) -> list[str]:
-        return self.input.split(split_value)
 
     def match(self, regexp: str, transform: Optional[Union[tuple[Any, ...], list[Any]]] = None) -> Any:
         return match_rows([self.input], regexp, transform=transform)[0]
@@ -751,6 +827,10 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         if getattr(self, "_matrix", None) is None:
             self._matrix = Matrix(self.rows)
         return self._matrix
+
+    @property
+    def origin(self) -> Values:
+        return self._origin if self._origin is not None else self
 
     @property
     def row_index(self) -> int:
