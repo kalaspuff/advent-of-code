@@ -5,6 +5,8 @@ from values import values
 async def run() -> int:
     matrix = values.matrix.pad(1, ".")
     start_pos = matrix.pos_first("S")
+    if not start_pos:
+        raise Exception("No start position found")
 
     direction: tuple[int, int]
     if matrix[tuple_add(start_pos, (1, 0))] in ("-", "J", "7"):
@@ -17,7 +19,7 @@ async def run() -> int:
         direction = (0, -1)
 
     position = start_pos
-    visited_nodes = set()
+    visited_nodes: set[tuple[int, int]] = set()
     while position not in visited_nodes:
         visited_nodes.add(position)
         position = tuple_add(position, direction)

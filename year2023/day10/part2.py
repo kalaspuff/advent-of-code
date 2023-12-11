@@ -1,7 +1,6 @@
 import itertools
 
 from helpers import tuple_add
-from matrix import Matrix
 from values import values
 
 START_DIRECTION_MAP = {
@@ -11,7 +10,7 @@ START_DIRECTION_MAP = {
     (0, -1): ("|", "7", "F"),
 }
 
-START_PIPE_MAP = {
+START_PIPE_MAP: dict[frozenset[tuple[int, int]], str] = {
     frozenset({(1, 0), (-1, 0)}): "-",
     frozenset({(0, 1), (0, -1)}): "|",
     frozenset({(1, 0), (0, -1)}): "L",
@@ -24,8 +23,10 @@ START_PIPE_MAP = {
 async def run() -> int:
     matrix = values.matrix.pad(1, ".")
     start_pos = matrix.pos_first("S")
+    if not start_pos:
+        raise Exception("No start position found")
 
-    start_directions = set()
+    start_directions: set[tuple[int, int]] = set()
     for direction, pipes in START_DIRECTION_MAP.items():
         if matrix[tuple_add(start_pos, direction)] in pipes:
             start_directions.add(direction)
@@ -58,20 +59,18 @@ async def run() -> int:
 
     positions: set[tuple[int, int]] = {(0, 0)}
     possible_positions = set(zoomed_matrix.position("."))
-    traversed_positions = set()
 
     while positions:
         pos = positions.pop()
-        traversed_positions.add(pos)
+        possible_positions.remove(pos)
         zoomed_matrix[pos] = "0"
         for mod in itertools.product([-1, 0, 1], [-1, 0, 1]):
             pos_ = tuple_add(pos, mod)
-            if pos_ in possible_positions and pos_ not in traversed_positions:
+            if pos_ in possible_positions:
                 positions.add(pos_)
 
     result_matrix = zoomed_matrix.replace(".", "I").replace("0", ".").zoom_out()
     print(result_matrix)
-
     return result_matrix.count("I")
 
 
