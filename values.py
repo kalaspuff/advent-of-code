@@ -7,6 +7,7 @@ import itertools
 import re
 import weakref
 from abc import ABCMeta, abstractmethod
+from collections import deque
 from types import GenericAlias as _GenericAlias
 from typing import (
     Any,
@@ -260,6 +261,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
                     else:
                         rows.extend(Values(row_data).input_.split("\n"))
                 self.input_ = "\n".join(rows)
+        self._rows = self.input_.split("\n")
 
     @classmethod
     def create_rows(cls, row_count: int) -> Values:
@@ -376,7 +378,11 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             index = len(self) + index
         if index >= len(self):
             raise IndexError("list assignment index out of range")
-        row = self.origin._rows.pop(self.row_index + index)
+        if self._origin is not None and index != -1:
+            raise NotImplementedError("pop from index not implemented for non origin values")
+        rows = self.origin.rows
+        row = rows.pop(self.row_index + index)
+        self.origin.input_ = "\n".join(rows)
         values = cast(ValuesRow, Values(row))
         values._single_row = True
         self._recalc_input()
@@ -386,6 +392,37 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         values = cast(ValuesRow, self.pop(0))
         return cast(ValuesIntT, values)
 
+    def insert(self: ValuesSlice, index: int, other: AcceptedTypes) -> None:
+        if self._origin is not None:
+            raise NotImplementedError("append not implemented for non origin values")
+        other = Values(other).input
+        if "\n" in other:
+            raise ValueError("insert only supports single row values")
+        rows = self.origin.rows
+        rows.insert(self.row_index + index, other)
+        self.origin.input_ = "\n".join(rows)
+        self._recalc_input()
+
+    def append(self: ValuesSlice, other: AcceptedTypes) -> None:
+        if self._origin is not None:
+            raise NotImplementedError("append not implemented for non origin values")
+        other = Values(other).input
+        if "\n" in other:
+            raise ValueError("append only supports single row values")
+        rows = self.origin.rows
+        rows.append(other)
+        self.origin.input_ = "\n".join(rows)
+        self._recalc_input()
+
+    def concat(self: ValuesRow, other: AcceptedTypes) -> ValuesRow:
+        if "\n" in self.input:
+            raise ValueError("concat only supports concatenation with values with single row")
+        other = Values(other).input
+        if "\n" in other:
+            raise ValueError("concat only supports single row values")
+        values = Values(self.input + other)
+        return cast(ValuesRow, values)
+
     def rotate(self) -> ValuesSlice:
         max_len = max(len(row) for row in self.rows)
         values = Values.create_rows(max_len)
@@ -393,6 +430,19 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             for x, char in enumerate(row):
                 values[x][y] = char
         return cast(ValuesSlice, values)
+
+    @overload
+    def deque(self: ValuesSlice) -> deque[deque[str]]:
+        ...
+
+    @overload
+    def deque(self: ValuesRow) -> deque[str]:
+        ...
+
+    def deque(self) -> deque[str] | deque[deque[str]]:
+        if self._single_row or len(self.origin) == 1:
+            return deque(self.input)
+        return deque([deque(row) for row in self.rows])
 
     @overload
     def ints(self: ValuesSlice) -> list[tuple[int, ...]]:
@@ -488,10 +538,10 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             if key >= len(self):
                 raise IndexError("list assignment index out of range")
             self.origin._rows[self.row_index + key] = value
+        self.origin.input_ = "\n".join(self.origin._rows)
         self._recalc_input()
 
     def _recalc_input(self) -> None:
-        self.origin.input_ = "\n".join(self.origin._rows)
         self.origin._rows = self.origin.input_.split("\n")
 
     def __reversed__(self) -> Self:

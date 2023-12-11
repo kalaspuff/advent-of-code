@@ -55,6 +55,7 @@ except Exception:
     raise
 
 values.input_ = input_.rstrip()
+values._rows = values.input_.split("\n")
 values.year = year
 values.day = day
 values.part = part

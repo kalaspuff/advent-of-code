@@ -7,7 +7,7 @@ from values import values
 async def run() -> int:
     result = 0
 
-    for row in values.findall_int():
+    for row in values.ints():
         sequences = [list(row)]
 
         while any(sequences[-1]):
