@@ -30,7 +30,6 @@ from typing import (
 )
 
 from helpers import batched, findall_rows, group_rows, match_rows, paired, pairwise
-from matrix import Matrix
 
 T = TypeVar("T")
 T1 = TypeVar("T1")
@@ -801,6 +800,8 @@ AcceptedTypes = (
 )
 
 values: ValuesSlice = Values()
+
+from matrix import Matrix
 
 
 # Some Regular expression examples:

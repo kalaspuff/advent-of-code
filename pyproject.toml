@@ -71,6 +71,7 @@ ignore = [
     "B010", # setattr without constant
     "C416", # unnecessary list comprehension
     "A003", # builtin shadowing
+    "E402", # import end of file
 ]
 src = [
     "*.py",

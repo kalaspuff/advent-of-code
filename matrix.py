@@ -7,6 +7,7 @@ from typing import (
     Any,
     ClassVar,
     Generic,
+    Iterable,
     Literal,
     Optional,
     Protocol,
@@ -100,10 +101,17 @@ class Matrix:
 
     def __init__(
         self,
-        rows,
-        width=None,
-        height=None,
-        fill=FILL_SENTINEL,
+        rows: Matrix
+        | list[str]
+        | tuple[str, ...]
+        | list[list[Any]]
+        | tuple[list[Any], ...]
+        | list[tuple[Any, ...]]
+        | str
+        | Values,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        fill: Any = FILL_SENTINEL,
         *,
         options: Optional[dict[str, bool]] = None,
         infinite_x: bool | DEFAULT[Literal[True]] = DEFAULT_VALUE,
@@ -115,6 +123,8 @@ class Matrix:
             rows = input_matrix.rows
             fill = input_matrix._fill if fill is FILL_SENTINEL else fill
             options_ = {**options_, **input_matrix._options}
+        if isinstance(rows, Values):
+            rows = rows.matrix.rows
 
         if options is not None:
             options_ = {**options_, **options}
@@ -124,10 +134,18 @@ class Matrix:
         if infinite_y is not DEFAULT_VALUE:
             options_["infinite_y"] = bool(infinite_y)
 
-        self._coordinates = {}
-        self.rows = (list(rows) if isinstance(rows, (list, tuple)) else rows.split("\n")) if rows else []
+        self._coordinates: dict[tuple[int, int], Any] = {}
+        self.rows: list[str] | list[list[str]] | list[tuple[str, ...]] = (
+            (
+                list(cast(Iterable, rows))
+                if isinstance(rows, (list, tuple, Iterable))
+                else (str(rows).split("\n") if isinstance(rows, str) else rows)
+            )
+            if rows
+            else []
+        )
         self._options: dict[str, Any] = options_
-        self._fill = " " if fill is FILL_SENTINEL else fill
+        self._fill: Any = " " if fill is FILL_SENTINEL else fill
 
         while height is not None and height > len(self.rows):
             self.rows.append([])
@@ -152,7 +170,7 @@ class Matrix:
         *,
         infinite_x: bool | DEFAULT[Literal[True]] = DEFAULT_VALUE,
         infinite_y: bool | DEFAULT[Literal[True]] = DEFAULT_VALUE,
-    ):
+    ) -> Matrix:
         return Matrix(self, options=options, infinite_x=infinite_x, infinite_y=infinite_y)
 
     @property
@@ -271,14 +289,14 @@ class Matrix:
     def count(self, value: Any) -> int:
         return len(self.position(value))
 
-    def y(self, value, to_value=None):
+    def y(self, value: int, to_value: Optional[int] = None) -> Matrix | Any:
         if to_value is None:
             if len(self.rows[value]) > 1:
                 return Matrix([self.rows[value]], fill=self._fill)
             return self.rows[value][0]
         return Matrix(self.rows[min(value, to_value) : (max(value, to_value) + 1)], fill=self._fill)
 
-    def x(self, value, to_value=None):
+    def x(self, value: int, to_value: Optional[int] = None) -> Matrix | Any:
         if to_value is None:
             if len(self.rows) > 1:
                 return Matrix([row[value] for row in self.rows], fill=self._fill)
@@ -326,7 +344,7 @@ class Matrix:
     def print(self) -> None:
         print(self.as_str())
 
-    def pos(self, char, start_pos=None) -> list[tuple[int, int]]:
+    def pos(self, char: Any, start_pos: Optional[tuple[int, int]] = None) -> list[tuple[int, int]]:
         x_index = 0 if start_pos is None else start_pos[0]
         positions = []
         for y, row in enumerate(self.rows):
@@ -345,7 +363,7 @@ class Matrix:
 
         return positions
 
-    def pos_first(self, char, start_pos=None) -> Optional[tuple[int, int]]:
+    def pos_first(self, char: Any, start_pos: Optional[tuple[int, int]] = None) -> Optional[tuple[int, int]]:
         x_index = 0 if start_pos is None else start_pos[0]
         for y, row in enumerate(self.rows):
             if start_pos is not None and start_pos[1] > y:
@@ -533,3 +551,6 @@ class Matrix:
         if m:
             x = int(m.group(1))
             return self.flip.rows[x]
+
+
+from values import Values
