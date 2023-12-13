@@ -656,13 +656,13 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         if self._single_row:
             return self.input.count(sub, start, end)
 
-        end = min(int(cast(int, end or len(self.rows))), len(self.rows))
-        start = int(cast(int, start or 0))
-        count = 0
-        for i in range(start, end):
-            if self.rows[i] == sub:
-                count += 1
-        return count
+        # end = min(int(cast(int, end or len(self.rows))), len(self.rows))
+        # start = int(cast(int, start or 0))
+        return len(self.indices(sub, start, end))
+        # for i in range(start, end):
+        #     if self.rows[i] == sub:
+        #         count += 1
+        # return count
 
     def index(
         self, sub: str | ValuesRow, start: Optional[SupportsIndex] = None, end: Optional[SupportsIndex] = None
@@ -672,12 +672,13 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         if self._single_row:
             return self.input.index(sub, start, end)
 
-        end = min(int(cast(int, end or len(self.rows))), len(self.rows))
-        start = int(cast(int, start or 0))
-        for i in range(start, end):
-            if self.rows[i] == sub:
-                return i
-        raise ValueError("substring not found")
+        end = end if end is not None else len(self.rows)  # min(int(cast(int, end or len(self.rows))), len(self.rows))
+        start = start or 0  # int(cast(int, start or 0))
+        return self.rows.index(sub, start, end)
+        # for i in range(start, end):
+        #     if self.rows[i] == sub:
+        #         return i
+        # raise ValueError("substring not found")
 
     def seek(self, index: int) -> Self:
         self._index = index
