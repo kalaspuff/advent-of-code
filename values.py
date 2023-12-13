@@ -562,6 +562,11 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def join(self, by: str) -> ValuesRow:
         return self.join_by(by)
 
+    def __eq__(self, other: AcceptedTypes) -> bool:
+        if isinstance(other, Values):
+            return self is other or self.input == other.input
+        return self.input == Values(other).input
+
     def __add__(self, other: AcceptedTypes) -> ValuesSlice:
         return Values(self, other)
 

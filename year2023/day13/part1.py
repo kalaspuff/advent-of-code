@@ -1,18 +1,14 @@
 from values import Values, values
 
 
-def find_reflection_line(pattern: Values) -> int | None:
-    for i in range(len(pattern)):
-        indices = pattern.indices(pattern[i], i + 1)
-        if not indices:
-            continue
-        for rindex in indices[::-1]:
-            if (rindex + i + 1) % 2 == 0 and (i == 0 or rindex == len(pattern) - 1):
-                first = pattern[i : rindex + 1]
-                last = pattern[rindex : (i - 1) if i else None : -1]
-                if first.input == last.input:
-                    return (rindex + i + 1) // 2
-    return None
+def find_reflection_line(pattern: Values) -> int:
+    for n in (0, len(pattern) - 1):
+        indices = [(n, i) if not n else (i, n) for i in pattern.indices(pattern[n]) if i != n and (i + n) % 2]
+        for start, end in indices:
+            sliced_pattern = pattern[start : end + 1]
+            if sliced_pattern == sliced_pattern[::-1]:
+                return (start + end + 1) // 2
+    return 0
 
 
 async def run() -> int:
@@ -20,12 +16,7 @@ async def run() -> int:
 
     for pattern in values.split_sections("\n\n"):
         horizontal = find_reflection_line(pattern)
-        if horizontal is not None:
-            result += horizontal * 100
-            continue
-        vertical = find_reflection_line(pattern.transpose())
-        if vertical is not None:
-            result += vertical
+        result += horizontal * 100 if horizontal else find_reflection_line(pattern.transpose())
 
     return result
 
