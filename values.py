@@ -259,6 +259,8 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
                     )
                 rows: list[str] = []
                 for row_data in input_:
+                    if isinstance(row_data, int):
+                        continue
                     if isinstance(row_data, str):
                         rows.extend(row_data.split("\n"))
                     elif isinstance(row_data, Values):
@@ -376,12 +378,14 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def next(self) -> ValuesIntT:
         return cast(ValuesIntT, next(self))
 
-    def indices(self, sub: str) -> list[int]:
-        index = 0
+    def indices(
+        self, sub: str | Values, start: Optional[SupportsIndex] = None, end: Optional[SupportsIndex] = None
+    ) -> list[int]:
+        index = start or 0
         indices = []
         while True:
             try:
-                index = self.index(sub, index)
+                index = self.index(sub, index, end)
                 indices.append(index)
                 index = index + 1
             except ValueError:
@@ -433,6 +437,9 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         self.origin.input_ = "\n".join(rows)
         self._recalc_input()
 
+    def extend(self: ValuesSlice, other: AcceptedTypes) -> None:
+        self.append(other)
+
     def concat(self: ValuesRow, other: AcceptedTypes) -> ValuesRow:
         if "\n" in self.input:
             raise ValueError("concat only supports concatenation with values with single row")
@@ -442,6 +449,10 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         values = Values(self.input + other)
         values._single_row = True
         return cast(ValuesRow, values)
+
+    def concat_rows(self, other: AcceptedTypes) -> ValuesSlice:
+        values = self + Values(other)
+        return cast(ValuesSlice, values)
 
     def transpose(self) -> ValuesSlice:
         max_len = max(len(row) for row in self.rows)
@@ -632,7 +643,11 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def deepcopy(self) -> Self:
         return self.__deepcopy__(None)
 
-    def count(self, sub: str, start: Optional[SupportsIndex] = None, end: Optional[SupportsIndex] = None) -> int:
+    def count(
+        self, sub: str | Values, start: Optional[SupportsIndex] = None, end: Optional[SupportsIndex] = None
+    ) -> int:
+        if isinstance(sub, Values):
+            sub = sub.input
         if self._single_row:
             return self.input.count(sub, start, end)
 
@@ -644,7 +659,11 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
                 count += 1
         return count
 
-    def index(self, sub: str, start: Optional[SupportsIndex] = None, end: Optional[SupportsIndex] = None) -> int:
+    def index(
+        self, sub: str | ValuesRow, start: Optional[SupportsIndex] = None, end: Optional[SupportsIndex] = None
+    ) -> int:
+        if isinstance(sub, Values):
+            sub = sub.input
         if self._single_row:
             return self.input.index(sub, start, end)
 

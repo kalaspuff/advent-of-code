@@ -4,11 +4,11 @@ from values import Values, values
 def find_reflection_line(pattern: Values) -> set[int]:
     reflections = set()
     for i in range(len(pattern)):
-        indices = pattern.indices(str(pattern[i]))
-        if len(indices) <= 1:
+        indices = pattern.indices(pattern[i], i + 1)
+        if not indices:
             continue
         for rindex in indices[::-1]:
-            if rindex > i and (rindex + i + 1) % 2 == 0 and (i == 0 or rindex == len(pattern) - 1):
+            if (rindex + i + 1) % 2 == 0 and (i == 0 or rindex == len(pattern) - 1):
                 first = pattern[i : rindex + 1]
                 last = pattern[rindex : (i - 1) if i else None : -1]
                 if first.input == last.input:
