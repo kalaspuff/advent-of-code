@@ -2,35 +2,34 @@ from values import values
 
 
 def calculate_possibilities(
-    possibilities: tuple[tuple[str, ...], ...], expected: tuple[str, ...], memo: dict[tuple[tuple, ...], int]
+    possibilities: list[str],
+    expected: tuple[str, ...],
+    memo: dict[tuple[tuple[str, ...], tuple[str, ...]], int] | None = None,
 ) -> int:
-    key = (possibilities, expected)
+    if memo is None:
+        memo = {((), ()): 1, ((), ("",)): 1}
+
+    key = (tuple(possibilities), expected)
     if key in memo:
         return memo[key]
 
-    if not possibilities:
-        return 1 if (not expected or (not expected[0] and not expected[1:])) else 0
+    current, *rest = possibilities if possibilities else [""]
 
-    current, *rest = possibilities
-    count = 0
-    if current == (".",):
-        expected_ = expected[1:] if expected and not expected[0] else expected
-        count += calculate_possibilities(tuple(rest), expected_, memo=memo)
-    if current == ("#",) and expected and expected[0]:
-        expected_ = (expected[0][1:],) + expected[1:]
-        next_ = "#" if expected_[0] else "."
-        if rest and len(rest[0]) > 1:
-            count += calculate_possibilities(((next_,), *tuple(rest[1:])), expected_, memo=memo)
-        elif (rest and rest[0] == (next_,)) or (not expected_[0] and not rest):
-            count += calculate_possibilities(tuple(rest), expected_, memo=memo)
-    if len(current) > 1:
-        for current_ in current:
-            if (not expected or not expected[0]) and current_ == "#":
-                continue
-            count += calculate_possibilities(((current_,), *tuple(rest)), expected, memo=memo)
+    match current:
+        case ".":
+            memo[key] = calculate_possibilities(rest, expected[1:] if not [*expected, ...][0] else expected, memo=memo)
+        case "#" if not rest or not expected:
+            memo[key] = 1 if expected == ("#",) else 0
+        case "#" if rest[0] in (current_ := "#" if expected[0][1:] else ".", "?"):
+            memo[key] = calculate_possibilities([current_, *rest[1:]], (expected[0][1:],) + expected[1:], memo=memo)
+        case "?" if [*expected, ...][0]:
+            memo[key] = sum(calculate_possibilities([char, *rest], expected, memo=memo) for char in ("#", "."))
+        case "?":
+            memo[key] = calculate_possibilities([".", *rest], expected, memo=memo)
+        case _:
+            memo[key] = 0
 
-    memo[key] = count
-    return count
+    return memo[key]
 
 
 async def run() -> int:
@@ -40,8 +39,7 @@ async def run() -> int:
         conditions = (folded_conditions * 5).join("?")
         group_sizes = group_sizes_str.ints() * 5
         expected = tuple("#" * size for size in group_sizes)
-        possibilities = tuple((".", "#") if v == "?" else (v,) for v in conditions)
-        result += calculate_possibilities(possibilities, expected, memo={})
+        result += calculate_possibilities(list(conditions), expected)
         continue
 
     return result
