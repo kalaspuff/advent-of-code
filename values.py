@@ -457,7 +457,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def transpose(self) -> ValuesSlice:
         max_len = max(len(row) for row in self.rows)
         values = Values.create_rows(max_len)
-        for y, row in enumerate(self.rows):
+        for y, row in enumerate(self.new().rows):
             for x, char in enumerate(row):
                 values[x][y] = char
         return cast(ValuesSlice, values)
@@ -476,7 +476,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def deque(self) -> deque[str] | deque[deque[str]]:
         if self._single_row or len(self.origin) == 1:
             return deque(self.input)
-        return deque([deque(row) for row in self.rows])
+        return deque([deque(row) for row in self.new().rows])
 
     @overload
     def ints(self: ValuesSlice) -> list[tuple[int, ...]]:
@@ -488,7 +488,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
 
     def ints(self) -> tuple[int, ...] | list[tuple[int, ...]]:
         if self._single_row or len(self.origin) == 1:
-            return tuple(int(value) for value in re.findall(r"(-?\d+)", self.input))
+            return tuple(int(value) for value in re.findall(r"(?:^|[^0-9])(-?\d+)", self.input))
         return self.findall_ints()
 
     @overload
@@ -503,6 +503,20 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         if self._single_row or len(self.origin) == 1:
             return tuple(value for value in re.findall(r"([a-zA-Z0-9]+)", self.input))
         return self.findall_alphanums()
+
+    @overload
+    def words(self: ValuesSlice, words: tuple[str, ...] | list[str] | set[str]) -> list[tuple[str, ...]]:
+        ...
+
+    @overload
+    def words(self: ValuesRow, words: tuple[str, ...] | list[str] | set[str]) -> tuple[str, ...]:
+        ...
+
+    def words(self, words: tuple[str, ...] | list[str] | set[str]) -> tuple[str, ...] | list[tuple[str, ...]]:
+        if self._single_row or len(self.origin) == 1:
+            words_regex = "|".join(words)
+            return tuple(value for value in re.findall(rf"({words_regex})", self.input))
+        return self.findall_words(words)
 
     @overload
     def digits(self: ValuesSlice) -> list[tuple[int, ...]]:
@@ -550,12 +564,12 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         return tuple([Values(rows) for rows in self.input.split(sep, maxsplit)])
 
     def flatten(self) -> ValuesRow:
-        values = Values("".join(self.rows))
+        values = Values("".join(self.new().rows))
         values._single_row = True
         return cast(ValuesRow, values)
 
     def join_by(self, by: str) -> ValuesRow:
-        values = Values(by.join(self.rows))
+        values = Values(by.join(self.new().rows))
         values._single_row = True
         return cast(ValuesRow, values)
 
@@ -614,16 +628,16 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
 
     def __reversed__(self) -> Self:
         values = self.__copy__()
-        if self._slice:
-            values._slice = slice(self._slice.start, self._slice.stop, self._slice.step * (-1))
-        else:
-            values._slice = slice(None, None, -1)
+        values._slice = slice(None, None, -1)
         values._reversed = not self._reversed
         return values
 
+    def reversed(self) -> Self:
+        return self.__reversed__()
+
     def __contains__(self, item: str | int) -> bool:
         item_ = str(item)
-        return item_ in self.input if self._single_row else item_ in self.rows
+        return item_ in self.input if self._single_row else item_ in self.new().rows
 
     def __copy__(self) -> Self:
         values = cast(Self, Values())
@@ -674,7 +688,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
 
         end = end if end is not None else len(self.rows)  # min(int(cast(int, end or len(self.rows))), len(self.rows))
         start = start or 0  # int(cast(int, start or 0))
-        return self.rows.index(sub, start, end)
+        return self.new().rows.index(sub, start, end)
         # for i in range(start, end):
         #     if self.rows[i] == sub:
         #         return i
@@ -792,7 +806,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         ] = None,
     ) -> list[Any]:
         transform_ = tuple(transform) if isinstance(transform, (tuple, list, Iterable)) else transform
-        return match_rows(self.rows, regexp, transform=transform_)
+        return match_rows(self.new().rows, regexp, transform=transform_)
 
     @overload
     def findall_rows(self, regexp: str, transform: tuple[Callable[..., T1]]) -> list[tuple[T1]]:
@@ -895,16 +909,20 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         ] = None,
     ) -> list[Any]:
         transform_ = tuple(transform) if isinstance(transform, (tuple, list, Iterable)) else transform
-        return findall_rows(self.rows, regexp, transform=transform_)
+        return findall_rows(self.new().rows, regexp, transform=transform_)
 
     def findall_ints(self) -> list[tuple[int, ...]]:
-        return self.findall_rows(r"(-?\d+)", int)
+        return self.findall_rows(r"(?:^|[^0-9])(-?\d+)", transform=int)
 
     def findall_int(self) -> list[tuple[int, ...]]:
         return self.findall_ints()
 
     def findall_digits(self) -> list[tuple[int, ...]]:
         return self.findall_rows(r"(\d)", int)
+
+    def findall_words(self, words: tuple[str, ...] | list[str] | set[str]) -> list[tuple[str, ...]]:
+        words_regex = "|".join(words)
+        return self.findall_rows(rf"({words_regex})", transform=str)
 
     def findall_alphanums(self) -> list[tuple[str, ...]]:
         return self.findall_rows(r"([a-zA-Z0-9]+)", transform=str)
@@ -929,6 +947,9 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
 
     def paired(self) -> list[tuple[Any, Any]]:
         return paired(self.rows)
+
+    def new(self) -> Self:
+        return Values(self.input)
 
     @property
     def input(self) -> str:
@@ -974,7 +995,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     @property
     def int_rows(self) -> list[int]:
         if getattr(self, "_int_rows", None) is None:
-            self._int_rows = list(map(int, self.rows))
+            self._int_rows = list(map(int, self.new().rows))
         return self._int_rows
 
     @property
@@ -1008,7 +1029,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     @property
     def matrix(self) -> Matrix:
         if getattr(self, "_matrix", None) is None:
-            self._matrix = Matrix(self.rows)
+            self._matrix = Matrix(self.new().rows)
         return self._matrix
 
     @property

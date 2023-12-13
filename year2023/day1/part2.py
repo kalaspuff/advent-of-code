@@ -15,28 +15,15 @@ async def run() -> int:
         "nine": "9",
     }
 
-    for row in values.rows:
-        digits = []
+    search_values = word_to_num.keys() | word_to_num.values()
+    reversed_search_values = {word[::-1] for word in search_values}
 
-        for i in range(len(row) + 1):
-            row_ = row[0:i]
-            for word, num in word_to_num.items():
-                if word in row_ or num in row_:
-                    digits.append(num)
-                    break
-            if digits:
-                break
+    for row in values:
+        first = row.words(search_values)[0]
+        last = row.reversed().words(reversed_search_values)[0][::-1]
 
-        for i in range(len(row) + 1):
-            row_ = row[-i - 1 :]
-            for word, num in word_to_num.items():
-                if word in row_ or num in row_:
-                    digits.append(num)
-                    break
-            if len(digits) == 2:
-                break
-
-        result += int(str(digits[0]) + str(digits[-1]))
+        digits = [int(word_to_num.get(first, first)), int(word_to_num.get(last, last))]
+        result += digits[0] * 10 + digits[-1]
 
     return result
 
