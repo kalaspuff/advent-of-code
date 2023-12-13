@@ -380,7 +380,7 @@ def findall_rows(
 ) -> Any:
     if not transform:
         transform = ()
-    transform_all = str
+    transform_all: Callable[..., Any] = str
     if not isinstance(transform, (tuple, list)):
         transform_all = transform
         transform = ()
@@ -794,7 +794,7 @@ def batched(
     iter_ = iter(iterable)
 
     try:
-        while part_ := next(iter_):
+        while (part_ := next(iter_)) or True:
             try:
                 batch = (part_, *tuple(next(iter_) for _ in range(n - 1)))
             except RuntimeError as exc:

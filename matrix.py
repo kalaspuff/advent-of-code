@@ -266,7 +266,7 @@ class Matrix:
             coordinates_ = {pos: self[pos] for pos in coordinates_}
         for pos, char in coordinates_.items():
             pos_ = pos[0] * 2, pos[1] * 2
-            matrix[*pos_] = char
+            matrix[(pos_[0], pos_[1])] = char
         return matrix
 
     def zoom_out(
@@ -277,7 +277,7 @@ class Matrix:
             if pos[0] % 2 != 0 or pos[1] % 2 != 0:
                 continue
             pos_ = pos[0] // 2, pos[1] // 2
-            matrix[*pos_] = char
+            matrix[(pos_[0], pos_[1])] = char
         return matrix
 
     def replace(self, old: Any, new: Any) -> Matrix:
@@ -553,4 +553,4 @@ class Matrix:
             return self.flip.rows[x]
 
 
-from values import Values
+from values import Values  # noqa: E402

@@ -1065,7 +1065,7 @@ AcceptedTypes = (
 
 values: ValuesSlice = Values()
 
-from matrix import Matrix
+from matrix import Matrix  # noqa: E402
 
 
 # Some Regular expression examples:

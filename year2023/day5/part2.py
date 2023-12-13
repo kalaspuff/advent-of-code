@@ -4,7 +4,7 @@ from values import values
 
 async def run() -> int:
     seed_values = transform_tuple(values.rows[0].split()[1:], int)
-    seed_ranges = {(*pair, int(0)) for pair in paired(seed_values)}
+    seed_ranges: set[tuple[int, int, int]] = {(*pair, 0) for pair in paired(seed_values)}
 
     maps: list[list[tuple[int, int, int]]] = []
     for row in values.rows[1:]:
