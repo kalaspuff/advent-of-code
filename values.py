@@ -329,6 +329,8 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
 
     def __iter__(self) -> Iterator[ValuesIntT]:
         iterator: Iterator[ValuesIntT] = cast(Iterator[ValuesIntT], self[self._index or 0 :])
+        if isinstance(iterator, str):
+            return iter(iterator)
         if not isinstance(iterator, Values):
             raise Exception("invalid iterator")
         iterator._origin_iterator = self
@@ -373,6 +375,18 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
 
     def next(self) -> ValuesIntT:
         return cast(ValuesIntT, next(self))
+
+    def indices(self, sub: str) -> list[int]:
+        index = 0
+        indices = []
+        while True:
+            try:
+                index = self.index(sub, index)
+                indices.append(index)
+                index = index + 1
+            except ValueError:
+                break
+        return indices
 
     def pop(self, index: int = -1) -> ValuesIntT:
         if index is None:
@@ -426,6 +440,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         if "\n" in other:
             raise ValueError("concat only supports single row values")
         values = Values(self.input + other)
+        values._single_row = True
         return cast(ValuesRow, values)
 
     def rotate(self) -> ValuesSlice:
@@ -501,8 +516,37 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             return self.split_input(sep, maxsplit)
         return [value.split_input(sep, maxsplit) for value in values]
 
+    @overload
+    def split_values(self: ValuesSlice, sep: str = " ", maxsplit: int = -1) -> list[ValuesSlice]:
+        ...
+
+    @overload
+    def split_values(self: ValuesRow, sep: str = " ", maxsplit: int = -1) -> ValuesSlice:
+        ...
+
+    def split_values(self, sep: str = " ", maxsplit: int = -1) -> ValuesSlice | list[ValuesSlice]:
+        if self._single_row or len(self.origin) == 1:
+            return Values(self.split_input(sep, maxsplit))
+        return [Values(value.split_input(sep, maxsplit)) for value in values]
+
     def split_input(self, sep: str = " ", maxsplit: int = -1) -> tuple[str, ...]:
         return tuple(self.input.split(sep, maxsplit))
+
+    def split_sections(self, sep: str = " ", maxsplit: int = -1) -> tuple[ValuesSlice, ...]:
+        return tuple([Values(rows) for rows in self.input.split(sep, maxsplit)])
+
+    def flatten(self) -> ValuesRow:
+        values = Values("".join(self.rows))
+        values._single_row = True
+        return cast(ValuesRow, values)
+
+    def join_by(self, by: str) -> ValuesRow:
+        values = Values(by.join(self.rows))
+        values._single_row = True
+        return cast(ValuesRow, values)
+
+    def join(self, by: str) -> ValuesRow:
+        return self.join_by(by)
 
     def __add__(self, other: AcceptedTypes) -> ValuesSlice:
         return Values(self, other)
@@ -566,22 +610,24 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         values = cast(Self, Values())
         values._origin = self
         values._reversed = self._reversed
+        values._single_row = self._single_row
         return values
 
     def copy(self) -> Self:
         return self.__copy__()
 
     def __deepcopy__(self, memo: dict) -> Self:
-        values = cast(Self, Values())
-        values._rows = self.rows[:: -1 if self._reversed else 1]
-        values.input_ = self.input[:: -1 if self._reversed else 1]
+        values = cast(Self, Values(self.input))
+        values._single_row = self._single_row
+        # values._rows = self.rows[:: -1 if self._reversed else 1]
+        # values.input_ = self.input[:: -1 if self._reversed else 1]
         if self._reversed:
             values._reversed = self._reversed
             values._slice = slice(None, None, -1)
         return values
 
     def deepcopy(self) -> Self:
-        return self.__deepcopy__()
+        return self.__deepcopy__(None)
 
     def count(self, sub: str, start: Optional[SupportsIndex] = None, end: Optional[SupportsIndex] = None) -> int:
         if self._single_row:
