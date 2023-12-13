@@ -21,7 +21,7 @@ async def run() -> int:
     for pattern in values.split_sections("\n\n"):
         reflection: int | None = None
         old_horizontal = find_reflection_line(pattern)
-        old_vertical = find_reflection_line(pattern.rotate()) if not old_horizontal else set()
+        old_vertical = find_reflection_line(pattern.transpose()) if not old_horizontal else set()
 
         for y, row in enumerate(pattern):
             for x, c in enumerate(row):
@@ -31,7 +31,7 @@ async def run() -> int:
                 elif c == ".":
                     pattern_[y][x] = "#"
                 horizontal = find_reflection_line(pattern_) - old_horizontal
-                vertical = find_reflection_line(pattern_.rotate()) - old_vertical
+                vertical = find_reflection_line(pattern_.transpose()) - old_vertical
                 if not horizontal and not vertical:
                     continue
                 reflection = (horizontal.pop() * 100) if horizontal else (vertical.pop())

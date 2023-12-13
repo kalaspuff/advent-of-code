@@ -443,13 +443,16 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         values._single_row = True
         return cast(ValuesRow, values)
 
-    def rotate(self) -> ValuesSlice:
+    def transpose(self) -> ValuesSlice:
         max_len = max(len(row) for row in self.rows)
         values = Values.create_rows(max_len)
         for y, row in enumerate(self.rows):
             for x, char in enumerate(row):
                 values[x][y] = char
         return cast(ValuesSlice, values)
+
+    def rotate(self) -> ValuesSlice:
+        return self.transpose()
 
     @overload
     def deque(self: ValuesSlice) -> deque[deque[str]]:

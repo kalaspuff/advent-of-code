@@ -9,7 +9,7 @@ async def run() -> int:
 
     multi = 2
     rows_without_galaxies = [i for i, row in enumerate(values) if "#" not in row]
-    cols_without_galaxies = [i for i, row in enumerate(values.rotate()) if "#" not in row]
+    cols_without_galaxies = [i for i, row in enumerate(values.transpose()) if "#" not in row]
 
     galaxies = values.matrix.position("#")
     for pair in itertools.combinations(galaxies, 2):

@@ -22,7 +22,7 @@ async def run() -> int:
         if horizontal is not None:
             result += horizontal * 100
             continue
-        vertical = find_reflection_line(pattern.rotate())
+        vertical = find_reflection_line(pattern.transpose())
         if vertical is not None:
             result += vertical
 
