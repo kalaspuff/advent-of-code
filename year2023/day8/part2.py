@@ -5,7 +5,7 @@ from values import values
 
 async def run() -> int:
     instructions = values[0]
-    node_connections = {node: connections for node, *connections in values[2:].findall_alphanum()}
+    node_connections = {node: connections for node, *connections in values.alphanums()[2:]}
 
     starting_nodes = [node for node in node_connections if node.endswith("A")]
     instruction_length = len(instructions)

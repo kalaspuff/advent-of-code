@@ -7,7 +7,7 @@ import itertools
 import re
 import weakref
 from abc import ABCMeta, abstractmethod
-from collections import deque
+from collections import Counter, deque
 from types import GenericAlias as _GenericAlias
 from typing import (
     Any,
@@ -616,6 +616,9 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
 
     def startswith(self, prefix: str) -> bool:
         return self.input.startswith(prefix)
+
+    def most_common(self, n: int | None = None) -> list[tuple[str, int]]:
+        return Counter(self.input).most_common(n)
 
     def strip(self, chars: str | None = None) -> Self:
         values = Values(self.input.strip(chars))
