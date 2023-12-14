@@ -4,7 +4,7 @@ from values import values
 
 async def run() -> int | float:
     seeds: tuple[int, ...] = values[0].ints()
-    maps = [row.ints() for row in values.split_sections(["\n\n", "map:"])[1:] if row.ints()]
+    maps = [rows.filter(lambda row: row.ints()).ints() for rows in values[1:].clean().split_sections("map:")]
 
     location = float("inf")
     for seed in seeds:

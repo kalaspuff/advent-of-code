@@ -285,6 +285,14 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     #     return Values[type[T]]
 
     @overload
+    def __getitem__(self: ValuesSlice, value: slice) -> ValuesSlice:
+        ...
+
+    @overload
+    def __getitem__(self: ValuesSlice, value: int) -> ValuesRow:
+        ...
+
+    @overload
     def __getitem__(self, value: int) -> ValuesIntT:
         ...
 
@@ -505,16 +513,22 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         return self.findall_alphanums()
 
     @overload
-    def words(self: ValuesSlice, words: tuple[str, ...] | list[str] | set[str]) -> list[tuple[str, ...]]:
+    def words(
+        self: ValuesSlice, words: tuple[str, ...] | list[str] | set[str] | Iterable[str] | None = None
+    ) -> list[tuple[str, ...]]:
         ...
 
     @overload
-    def words(self: ValuesRow, words: tuple[str, ...] | list[str] | set[str]) -> tuple[str, ...]:
+    def words(
+        self: ValuesRow, words: tuple[str, ...] | list[str] | set[str] | Iterable[str] | None = None
+    ) -> tuple[str, ...]:
         ...
 
-    def words(self, words: tuple[str, ...] | list[str] | set[str]) -> tuple[str, ...] | list[tuple[str, ...]]:
+    def words(
+        self, words: tuple[str, ...] | list[str] | set[str] | Iterable[str] | None = None
+    ) -> tuple[str, ...] | list[tuple[str, ...]]:
         if self._single_row or len(self.origin) == 1:
-            words_regex = "|".join(words)
+            words_regex = "|".join(words) if words is not None else "[a-zA-Z]+"
             return tuple(value for value in re.findall(rf"({words_regex})", self.input))
         return self.findall_words(words)
 
@@ -629,6 +643,24 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         values = Values(self.input.replace(Values(old).input, Values(new).input, count))
         values._single_row = self._single_row
         return cast(Self, values)
+
+    def filter_input(self, func: Callable[[str], Any]) -> Values[ValuesIntT, ValuesSliceT]:
+        values = Values("".join([c for c in self.input if func(c)]))
+        values._single_row = self._single_row
+        return cast(Values[ValuesIntT, ValuesSliceT], values)
+
+    def filter_rows(self, func: Callable[[ValuesRow], Any]) -> ValuesSlice:
+        values = Values("\n".join([row for row in self.new().rows if func(cast(ValuesRow, Values(row)))]))
+        return cast(ValuesSlice, values)
+
+    def filter(self, func: Callable[[ValuesIntT], Any]) -> Values[ValuesIntT, ValuesSliceT]:
+        if self._single_row:
+            print("FILTER", self, self._single_row, "---")
+            return cast(Values[ValuesIntT, ValuesSliceT], self.filter_input(func))
+        return cast(Values[ValuesIntT, ValuesSliceT], self.filter_rows(func))
+
+    def clean(self) -> ValuesSlice:
+        return cast(ValuesSlice, self.filter_rows(lambda row: row.strip()))
 
     def __eq__(self, other: AcceptedTypes) -> bool:
         if isinstance(other, Values):
@@ -977,8 +1009,10 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def findall_digits(self) -> list[tuple[int, ...]]:
         return self.findall_rows(r"(\d)", int)
 
-    def findall_words(self, words: tuple[str, ...] | list[str] | set[str]) -> list[tuple[str, ...]]:
-        words_regex = "|".join(words)
+    def findall_words(
+        self, words: tuple[str, ...] | list[str] | set[str] | Iterable[str] | None = None
+    ) -> list[tuple[str, ...]]:
+        words_regex = "|".join(words) if words is not None else "[a-zA-Z]+"
         return self.findall_rows(rf"({words_regex})", transform=str)
 
     def findall_alphanums(self) -> list[tuple[str, ...]]:

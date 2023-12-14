@@ -1,18 +1,18 @@
-from helpers import inverse_dict, multisplit
 from values import values
+
+MAX_CUBES = {"red": 12, "green": 13, "blue": 14}
 
 
 async def run() -> int:
     result = 0
-    max_cubes = {"red": 12, "green": 13, "blue": 14}
 
-    for game_id, record in values.match_rows(r"^Game (\d+): (.*)$", transform=(int, str)):
-        for rounds in multisplit(record, ["; ", ", "]):
-            cubes = inverse_dict(map(str.split, rounds), transform=(str, int))
-            if any(cubes[color] > max_cubes[color] for color in cubes):
+    for game_id, *record in values.split_values([":", ";"]):
+        for rounds in record:
+            cubes = {**MAX_CUBES, **dict(zip(rounds.words(), rounds.ints()))}
+            if any(c > m for c, m in zip(cubes.values(), MAX_CUBES.values())):
                 break
         else:
-            result += game_id
+            result += game_id.ints()[0]
 
     return result
 

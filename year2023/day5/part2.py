@@ -4,7 +4,7 @@ from values import values
 
 async def run() -> int:
     seed_ranges: set[tuple[int, int, int]] = {(*pair, 0) for pair in paired(values[0].ints())}
-    maps = [row.ints() for row in values.split_sections(["\n\n", "map:"])[1:] if row.ints()]
+    maps = [rows.filter(lambda row: row.ints()).ints() for rows in values[1:].clean().split_sections("map:")[1:]]
 
     for map_ in maps:
         updated_ranges: set[tuple[int, int, int]] = set()

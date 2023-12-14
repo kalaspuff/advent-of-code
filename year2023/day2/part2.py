@@ -1,17 +1,14 @@
-from helpers import inverse_dict, multisplit
 from values import values
 
 
 async def run() -> int:
     result = 0
 
-    for _, record in values.match_rows(r"^Game (\d+): (.*)$", transform=(int, str)):
+    for _, *record in values.split_values([":", ";"]):
         min_cubes = {"red": 0, "green": 0, "blue": 0}
-
-        for rounds in multisplit(record, ["; ", ", "]):
-            cubes = inverse_dict(map(str.split, rounds), transform=(str, int))
+        for rounds in record:
+            cubes = dict(zip(rounds.words(), rounds.ints()))
             min_cubes.update({color: max(min_cubes[color], count) for color, count in cubes.items()})
-
         result += min_cubes["red"] * min_cubes["green"] * min_cubes["blue"]
 
     return result
