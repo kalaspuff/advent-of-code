@@ -3,7 +3,7 @@ from values import values
 
 
 async def run() -> int | float:
-    seeds: tuple[int, ...] = transform_tuple(values.rows[0].split()[1:], int)
+    seeds: tuple[int, ...] = values[0].ints()
     maps = [row.ints() for row in values.split_sections(["\n\n", "map:"])[1:] if row.ints()]
 
     location = float("inf")

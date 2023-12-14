@@ -3,8 +3,7 @@ from values import values
 
 async def run() -> int:
     result = 0
-    time = int("".join(values.rows[0].split()[1:]))
-    record = int("".join(values.rows[1].split()[1:]))
+    time, record = values.replace(" ", "").flatten().ints()
 
     for hold_time in range(time):
         speed = hold_time

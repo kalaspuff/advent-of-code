@@ -1,13 +1,10 @@
-from helpers import transform_tuple
 from values import values
 
 
 async def run() -> int:
     result = 1
-    times = transform_tuple(values.rows[0].split()[1:], int)
-    distances = transform_tuple(values.rows[1].split()[1:], int)
 
-    for time, record in zip(times, distances):
+    for time, record in zip(*values.ints()):
         ways_to_win = 0
         for hold_time in range(time):
             speed = hold_time

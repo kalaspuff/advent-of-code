@@ -622,6 +622,11 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         values._single_row = self._single_row
         return cast(Self, values)
 
+    def replace(self, old: AcceptedTypes, new: AcceptedTypes, count: SupportsIndex = -1) -> Self:
+        values = Values(self.input.replace(Values(old).input, Values(new).input, count))
+        values._single_row = self._single_row
+        return cast(Self, values)
+
     def __eq__(self, other: AcceptedTypes) -> bool:
         if isinstance(other, Values):
             return self is other or self.input == other.input

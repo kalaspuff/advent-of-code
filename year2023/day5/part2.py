@@ -1,10 +1,9 @@
-from helpers import paired, transform_tuple
+from helpers import paired
 from values import values
 
 
 async def run() -> int:
-    seed_values = transform_tuple(values.rows[0].split()[1:], int)
-    seed_ranges: set[tuple[int, int, int]] = {(*pair, 0) for pair in paired(seed_values)}
+    seed_ranges: set[tuple[int, int, int]] = {(*pair, 0) for pair in paired(values[0].ints())}
     maps = [row.ints() for row in values.split_sections(["\n\n", "map:"])[1:] if row.ints()]
 
     for map_ in maps:
