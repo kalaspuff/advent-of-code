@@ -108,7 +108,8 @@ class Matrix:
         | tuple[list[Any], ...]
         | list[tuple[Any, ...]]
         | str
-        | Values,
+        | Values
+        | None = None,
         width: Optional[int] = None,
         height: Optional[int] = None,
         fill: Any = FILL_SENTINEL,
@@ -117,6 +118,8 @@ class Matrix:
         infinite_x: bool | DEFAULT[Literal[True]] = DEFAULT_VALUE,
         infinite_y: bool | DEFAULT[Literal[True]] = DEFAULT_VALUE,
     ):
+        if rows is None:
+            rows = ()
         options_: dict[str, Any] = DEFAULT_OPTIONS.copy()
         if isinstance(rows, Matrix):
             input_matrix = rows

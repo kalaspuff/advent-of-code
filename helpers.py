@@ -195,7 +195,7 @@ def manhattan_distance(
 ) -> int:
     # also known as manhattan length, snake distance, taxicab metric, etc.
     if isinstance(pos_1, range) and isinstance(pos_2, range):
-        return abs(pos_1.start - pos_1.stop) + abs(pos_2.start - pos_2.stop)
+        return len(range(pos_1.start, pos_1.stop - 1, pos_1.step)) + len(range(pos_2.start, pos_2.stop - 1, pos_2.step))
     pos_1 = tuple(pos_1) if isinstance(pos_1, map) else pos_1
     pos_2 = tuple(pos_1) if isinstance(pos_2, map) else pos_2
     return max(pos_1[0], pos_2[0]) - min(pos_1[0], pos_2[0]) + max(pos_1[1], pos_2[1]) - min(pos_1[1], pos_2[1])
@@ -206,8 +206,8 @@ def position_ranges(
 ) -> tuple[range, range]:
     pos_1 = tuple(pos_1) if isinstance(pos_1, map) else pos_1
     pos_2 = tuple(pos_1) if isinstance(pos_2, map) else pos_2
-    return range(min(pos_1[0], pos_2[0]), max(pos_1[0], pos_2[0])), range(
-        min(pos_1[1], pos_2[1]), max(pos_1[1], pos_2[1])
+    return range(min(pos_1[0], pos_2[0]), max(pos_1[0], pos_2[0]) + 1), range(
+        min(pos_1[1], pos_2[1]), max(pos_1[1], pos_2[1]) + 1
     )
 
 
