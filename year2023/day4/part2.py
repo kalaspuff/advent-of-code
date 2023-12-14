@@ -3,13 +3,10 @@ from values import values
 
 async def run() -> int:
     result = 0
-    originals = []
+    originals: list[tuple[int, int]] = []
 
-    parse_numbers = lambda n: set(map(int, n.split()))
-    for index, (winning_numbers, my_numbers) in enumerate(
-        values.findall_rows(r"[:|]\s+((?:\d+\s*)+)", transform=parse_numbers)
-    ):
-        matches = len(winning_numbers & my_numbers)
+    for index, (_, winning_numbers, my_numbers) in enumerate(values.split_values([":", "|"])):
+        matches = len(set(winning_numbers.ints()) & set(my_numbers.ints()))
         originals.append((index, matches))
 
     cards = originals[:]

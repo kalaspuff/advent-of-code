@@ -4,14 +4,7 @@ from values import values
 
 async def run() -> int | float:
     seeds: tuple[int, ...] = transform_tuple(values.rows[0].split()[1:], int)
-
-    maps: list[list[tuple[int, int, int]]] = []
-    for row in values.rows[1:]:
-        if row.endswith("map:"):
-            maps.append([])
-        elif row:
-            map_entry: tuple[int, int, int] = transform_tuple(row.split(), (int, int, int))
-            maps[-1].append(map_entry)
+    maps = [row.ints() for row in values.split_sections(["\n\n", "map:"])[1:] if row.ints()]
 
     location = float("inf")
     for seed in seeds:

@@ -4,9 +4,8 @@ from values import values
 async def run() -> int:
     result = 0
 
-    parse_numbers = lambda n: set(map(int, n.split()))
-    for winning_numbers, my_numbers in values.findall_rows(r"[:|]\s+((?:\d+\s*)+)", transform=parse_numbers):
-        matches = len(winning_numbers & my_numbers)
+    for _, winning_numbers, my_numbers in values.split_values([":", "|"]):
+        matches = len(set(winning_numbers.ints()) & set(my_numbers.ints()))
         if matches:
             result += 2 ** (matches - 1)
 

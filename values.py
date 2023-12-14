@@ -532,36 +532,71 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         return self.findall_digits()
 
     @overload
-    def split(self: ValuesSlice, sep: str = " ", maxsplit: int = -1) -> list[tuple[str, ...]]:
+    def split(
+        self: ValuesSlice, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
+    ) -> list[tuple[str, ...]]:
         ...
 
     @overload
-    def split(self: ValuesRow, sep: str = " ", maxsplit: int = -1) -> tuple[str, ...]:
+    def split(
+        self: ValuesRow, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
+    ) -> tuple[str, ...]:
         ...
 
-    def split(self, sep: str = " ", maxsplit: int = -1) -> tuple[str, ...] | list[tuple[str, ...]]:
+    def split(
+        self, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
+    ) -> tuple[str, ...] | list[tuple[str, ...]]:
         if self._single_row or len(self.origin) == 1:
             return self.split_input(sep, maxsplit)
         return [value.split_input(sep, maxsplit) for value in values]
 
     @overload
-    def split_values(self: ValuesSlice, sep: str = " ", maxsplit: int = -1) -> list[ValuesSlice]:
+    def split_values(
+        self: ValuesSlice, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
+    ) -> list[ValuesSlice]:
         ...
 
     @overload
-    def split_values(self: ValuesRow, sep: str = " ", maxsplit: int = -1) -> ValuesSlice:
+    def split_values(
+        self: ValuesRow, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
+    ) -> ValuesSlice:
         ...
 
-    def split_values(self, sep: str = " ", maxsplit: int = -1) -> ValuesSlice | list[ValuesSlice]:
+    def split_values(
+        self, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
+    ) -> ValuesSlice | list[ValuesSlice]:
         if self._single_row or len(self.origin) == 1:
             return Values(self.split_input(sep, maxsplit))
-        return [Values(value.split_input(sep, maxsplit)) for value in values]
+        return [Values([v.strip() for v in value.split_input(sep, maxsplit)]) for value in values]
 
-    def split_input(self, sep: str = " ", maxsplit: int = -1) -> tuple[str, ...]:
+    def split_input(
+        self, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
+    ) -> tuple[str, ...]:
+        if isinstance(sep, (list, tuple, set)):
+            parts = [self.input]
+            for sep_ in sep:
+                if sep_ in self.input:
+                    parts_: list[str] = []
+                    while parts:
+                        part = parts.pop(0)
+                        split_parts = part.split(sep_, maxsplit)
+                        parts_.extend(split_parts)
+                        if maxsplit != -1:
+                            maxsplit -= len(split_parts)
+                            if maxsplit < 0:
+                                maxsplit = 0
+                                break
+                    parts_.extend(parts)
+                    parts = parts_[:]
+                    if maxsplit == 0:
+                        break
+            return tuple(parts)
         return tuple(self.input.split(sep, maxsplit))
 
-    def split_sections(self, sep: str = " ", maxsplit: int = -1) -> tuple[ValuesSlice, ...]:
-        return tuple([Values(rows) for rows in self.input.split(sep, maxsplit)])
+    def split_sections(
+        self, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
+    ) -> list[ValuesSlice]:
+        return [Values(rows.strip()) for rows in self.split_input(sep, maxsplit)]
 
     def flatten(self) -> ValuesRow:
         values = Values("".join(self.new().rows))
@@ -576,10 +611,24 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def join(self, by: str) -> ValuesRow:
         return self.join_by(by)
 
+    def endswith(self, suffix: str) -> bool:
+        return self.input.endswith(suffix)
+
+    def startswith(self, prefix: str) -> bool:
+        return self.input.startswith(prefix)
+
+    def strip(self, chars: str | None = None) -> Self:
+        values = Values(self.input.strip(chars))
+        values._single_row = self._single_row
+        return cast(Self, values)
+
     def __eq__(self, other: AcceptedTypes) -> bool:
         if isinstance(other, Values):
             return self is other or self.input == other.input
         return self.input == Values(other).input
+
+    def __bool__(self) -> bool:
+        return bool(self.input)
 
     def __add__(self, other: AcceptedTypes) -> ValuesSlice:
         return Values(self, other)
