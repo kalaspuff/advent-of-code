@@ -1,45 +1,44 @@
-import functools
-import itertools
-import math
-import re
-from collections import Counter, deque
-from itertools import combinations, permutations, product
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, TypeVar, Union
-
-import helpers
-from helpers import (
-    batched,
-    inverse,
-    inverse_dict,
-    manhattan_distance,
-    multisplit,
-    paired,
-    pairwise,
-    position_ranges,
-    transform,
-    transform_dict,
-    transform_tuple,
-    tuple_add,
-)
-from matrix import Matrix
-from values import Values, values
-
-# https://docs.python.org/3/library/itertools.html
-# https://docs.python.org/3/library/collections.html
+from values import values
 
 
 async def run() -> int:
-    result = 0
+    matrix = values.matrix
+    target_cycles = 1000000000
+    memo: dict[str, int] = {}
+    cycle = 0
 
-    for row in values.rows:
-        pass
+    while cycle < target_cycles:
+        key = str(matrix)
+        if key in memo and memo[key] + cycle < target_cycles:
+            cycle_loop = cycle - memo[key]
+            cycle = target_cycles - cycle % cycle_loop
+            continue
+        if key not in memo:
+            memo[key] = cycle
 
-    return result
+        for _ in range(4):
+            for x in range(matrix.width):
+                target_y: int | None = None
+                for y in range(matrix.height):
+                    match matrix[(x, y)]:
+                        case "#":
+                            target_y = None
+                        case "." if target_y is None:
+                            target_y = y
+                        case "O" if target_y is not None:
+                            matrix[(x, target_y)], matrix[(x, y)] = matrix[(x, y)], matrix[(x, target_y)]
+                            target_y += 1
+
+            matrix = matrix.rotate_right()
+
+        cycle += 1
+
+    return sum(matrix.height - y for _, y in matrix.position("O"))
 
 
 # [values.year]            (number)  2023
-# [values.day]             (number)  0
+# [values.day]             (number)  14
 # [values.part]            (number)  2
-# [values.input_filename]  (str)     ./year2023/day0/input
+# [values.input_filename]  (str)     ./year2023/day14/input
 #
-# Result: ...
+# Result: 93742

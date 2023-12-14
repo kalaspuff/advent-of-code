@@ -422,6 +422,15 @@ class Matrix:
             rows.append(row)
         return Matrix(rows, fill=self._fill)
 
+    def rotate_right(self) -> Matrix:
+        return Matrix(rows=[str(self.x(i)).replace("\n", "")[::-1].strip() for i in range(self.width)])
+
+    def rotate_left(self) -> Matrix:
+        return Matrix(rows=[str(self.x(i)).replace("\n", "").strip() for i in range(self.width - 1, -1, -1)])
+
+    def mirror(self) -> Matrix:
+        return Matrix(rows=[str(self.y(i)).replace("\n", "").strip() for i in range(self.height - 1, -1, -1)])
+
     def get(self, *args, x=None, y=None):
         if x is not None and y is not None and not args:
             args = (x, y)
