@@ -2,10 +2,10 @@ from helpers import tuple_add
 from values import values
 
 DIRECTIONS: dict[str, tuple[int, int]] = {
-    "U": (0, -1),
+    "R": (1, 0),
     "D": (0, 1),
     "L": (-1, 0),
-    "R": (1, 0),
+    "U": (0, -1),
 }
 
 
@@ -16,7 +16,7 @@ async def run() -> int:
 
     parse_direction = lambda v: DIRECTIONS[v]
     for direction, distance, _ in values.match_rows(
-        r"^([RLUD])\s+(\d+)\s+[(][#]([0-9a-f]+)[)]", transform=(parse_direction, int, str)
+        r"^([RDLU])\s+(\d+)\s+[(][#]([0-9a-f]+)[)]", transform=(parse_direction, int, str)
     ):
         pos_ = tuple_add(pos, (direction[0] * distance, direction[1] * distance))
         edge_length += distance
@@ -28,8 +28,8 @@ async def run() -> int:
 
 
 # [values.year]            (number)  2023
-# [values.day]             (number)  0
+# [values.day]             (number)  18
 # [values.part]            (number)  1
-# [values.input_filename]  (str)     ./year2023/day0/input
+# [values.input_filename]  (str)     ./year2023/day18/input
 #
 # Result: 50603
