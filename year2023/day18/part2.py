@@ -1,45 +1,37 @@
-import functools
-import itertools
-import math
-import re
-from collections import Counter, deque
-from itertools import combinations, permutations, product
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, TypeVar, Union
+from helpers import tuple_add
+from values import values
 
-import helpers
-from helpers import (
-    batched,
-    inverse,
-    inverse_dict,
-    manhattan_distance,
-    multisplit,
-    paired,
-    pairwise,
-    position_ranges,
-    transform,
-    transform_dict,
-    transform_tuple,
-    tuple_add,
-)
-from matrix import Matrix
-from values import Values, values
-
-# https://docs.python.org/3/library/itertools.html
-# https://docs.python.org/3/library/collections.html
+DIRECTIONS: dict[str, tuple[int, int]] = {
+    "3": (0, -1),
+    "1": (0, 1),
+    "2": (-1, 0),
+    "0": (1, 0),
+}
 
 
 async def run() -> int:
-    result = 0
+    area = 0
+    edge_length = 0
+    pos = (0, 0)
 
-    for row in values.rows:
-        pass
+    parse_direction = lambda v: DIRECTIONS[v]
+    parse_distance = lambda v: int(v, 16)
 
-    return result
+    for distance, direction in values.match_rows(
+        r"[RLUD]\s+\d+\s+[(][#]([0-9a-f]{5})([0-3])[)]", transform=(parse_distance, parse_direction)
+    ):
+        pos_ = tuple_add(pos, (direction[0] * distance, direction[1] * distance))
+        edge_length += distance
+        area += pos[0] * pos_[1] - pos_[0] * pos[1]
+
+        pos = pos_
+
+    return (area - edge_length) // 2 + edge_length + 1
 
 
 # [values.year]            (number)  2023
 # [values.day]             (number)  0
-# [values.part]            (number)  2
+# [values.part]            (number)  1
 # [values.input_filename]  (str)     ./year2023/day0/input
 #
-# Result: ...
+# Result: 50603
