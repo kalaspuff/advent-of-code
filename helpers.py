@@ -88,14 +88,14 @@ def type_from_tuple(
 
 @overload
 def type_from_tuple(
-    val: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4], Callable[..., T5]]
+    val: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4], Callable[..., T5]],
 ) -> tuple[T1, T2, T3, T4, T5]:
     return cast(tuple[T1, T2, T3, T4, T5], ...)
 
 
 @overload
 def type_from_tuple(
-    val: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4]]
+    val: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4]],
 ) -> tuple[T1, T2, T3, T4]:
     return cast(tuple[T1, T2, T3, T4], ...)
 
@@ -336,9 +336,7 @@ def split_to_dict(
         for s in split:
             sub_result = []
             for r in split_rows:
-                if strip:
-                    r = r.strip()
-                sub_result += r.split(s)
+                sub_result += r.strip().split(s) if strip else r.split(s)
             split_rows = sub_result
         merged_rows += split_rows
 
@@ -807,7 +805,8 @@ def batched(
                 batch_number = len(result) + 1
                 missing_items = length - n * (batch_number - 1)
                 exception = IteratorExhaustedError(
-                    f"batched() iterator was prematurely exhausted (length={length}, n={n}, batch_number={len(result) + 1}, missing_items={missing_items})"
+                    f"batched() iterator was prematurely exhausted (length={length}, n={n}, "
+                    + f"batch_number={len(result) + 1}, missing_items={missing_items})"
                 )
                 exception.result = result
                 raise exception from exc

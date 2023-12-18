@@ -23,8 +23,6 @@ from typing import (
     Self,
     Sequence,
     SupportsIndex,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     cast,

@@ -72,6 +72,9 @@ ignore = [
     "C416", # unnecessary list comprehension
     "A003", # builtin shadowing
     "C901", # complex structure
+    "PLR0912", # function complexity
+    "PLR0915", # function complexity
+    "UP035", # import from collections.abc instead
 ]
 src = [
     "*.py",

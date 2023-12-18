@@ -6,6 +6,7 @@ import importlib
 import importlib.util
 import itertools
 import math
+import os
 import pathlib
 import sys
 import time
@@ -36,35 +37,47 @@ sys.path.insert(0, day_path)
 python_filepath = f"{day_path}/part{part}.py"
 
 input_filename = sys.argv[4] if len(sys.argv) > 4 else "input"
-if input_filename.startswith("./"):
+if input_filename.startswith(("./", "../")):
     input_filename_fullpath = f"{cwd}/{input_filename}"
     input_filename = input_filename_fullpath.rsplit("/", 1)[1]
 elif input_filename.startswith("/"):
     input_filename_fullpath = input_filename
     input_filename = input_filename_fullpath.rsplit("/", 1)[1]
-else:
-    input_filename = input_filename.replace(f"year{year}/day{day}/", "")
+elif "/" not in input_filename:
     input_filename_fullpath = f"{day_path}/{input_filename}"
+elif input_filename.startswith(f"year{year}/day{day}/"):
+    input_filename = input_filename.replace(f"year{year}/day{day}/", "", 1)
+    input_filename_fullpath = f"{day_path}/{input_filename}"
+else:
+    input_filename_fullpath = f"{cwd}/{input_filename}"
+    input_filename = input_filename_fullpath.rsplit("/", 1)[1]
 
 input_ = ""
 try:
-    with open(input_filename_fullpath, "r") as f:
+    with open(input_filename_fullpath) as f:
         input_ = f.read()
 except Exception:
     print("warning: cannot read puzzle input from file")
     raise
+
+path_prefix = os.path.commonprefix([os.path.realpath(python_filepath), cwd])
+if os.path.realpath(input_filename_fullpath).startswith(path_prefix):
+    input_filename_fullpath = os.path.realpath(input_filename_fullpath)
+    relative_filename = "./" + input_filename_fullpath[len(path_prefix) :].lstrip("/")
+else:
+    relative_filename = os.path.realpath(input_filename_fullpath)
 
 values.input_ = input_.rstrip()
 values._rows = values.input_.split("\n")
 values.year = year
 values.day = day
 values.part = part
-values.input_filename = ".{}".format(input_filename_fullpath.split(cwd, 1)[1])
+values.input_filename = relative_filename
 values.result = []
 values.counter = 0
 
 
-async def _async():
+async def _async() -> None:
     try:
         spec = importlib.util.find_spec(
             ".{}".format(python_filepath.rsplit("/", 1)[1])[:-3], package=python_filepath.rsplit("/", 2)[1]
@@ -126,13 +139,13 @@ async def _async():
         if not name.startswith("_") and name not in module_import.__dict__:
             setattr(module_import, name, getattr(typing, name))
 
-    getattr(spec.loader, "exec_module")(module_import)
+    getattr(spec.loader, "exec_module")(module_import)  # noqa: B009
 
     result_large_output = False
     start_time = time.time()
 
     try:
-        result = await getattr(module_import, "run")()
+        result = await getattr(module_import, "run")()  # noqa: B009
     except Exception as exc:
         result = exc
 

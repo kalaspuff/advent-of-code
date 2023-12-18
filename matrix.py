@@ -431,7 +431,7 @@ class Matrix:
     def mirror(self) -> Matrix:
         return Matrix(rows=[str(self.y(i)).replace("\n", "").strip() for i in range(self.height - 1, -1, -1)])
 
-    def get(self, *args, x=None, y=None):
+    def get(self, *args: Any, x: Any = None, y: Any = None) -> Any:
         if x is not None and y is not None and not args:
             args = (x, y)
         if isinstance(args, dict) and "x" in args and "y" in args:
@@ -454,7 +454,7 @@ class Matrix:
         ):
             return [self.get(p) for p in args[0]]
 
-        x_, y_ = args
+        x_, y_ = cast(tuple[int, int], args)
 
         while self._options.get("infinite_x") and x_ > self.max_x:
             x_ -= self.width
@@ -463,10 +463,10 @@ class Matrix:
 
         try:
             return self.coordinates[x_, y_]
-        except KeyError:
-            raise IndexError
+        except KeyError as exc:
+            raise IndexError from exc
 
-    def set(self, *args, value=VALUE_SENTINEL, x=None, y=None):
+    def set(self, *args: Any, value: Any = VALUE_SENTINEL, x: Any = None, y: Any = None) -> None:
         if x is not None and y is not None and not args:
             args = (x, y)
         if isinstance(args, dict) and "x" in args and "y" in args:
@@ -540,8 +540,8 @@ class Matrix:
                 self.rows[y_] = self.rows[y_][0:x_] + value + self.rows[y_][(x_ + 1) :]
             else:
                 self.rows[y_][x_] = value
-        except KeyError:
-            raise IndexError
+        except KeyError as exc:
+            raise IndexError from exc
 
     def __getattr__(self, item):
         item = item.replace("_", "-")
