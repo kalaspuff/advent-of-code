@@ -736,7 +736,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def copy(self) -> Self:
         return self.__copy__()
 
-    def __deepcopy__(self, memo: dict) -> Self:
+    def __deepcopy__(self, memo: dict | None) -> Self:
         values = cast(Self, Values(self.input))
         values._single_row = self._single_row
         # values._rows = self.rows[:: -1 if self._reversed else 1]

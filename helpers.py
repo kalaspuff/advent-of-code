@@ -1,6 +1,9 @@
 # note: code may have been written in a rush, here be dragons and lots of bad patterns to avoid.
+from __future__ import annotations
+
 import functools
 import itertools
+import math
 import re
 from collections import Counter, deque
 from itertools import combinations, permutations, product
@@ -12,6 +15,7 @@ from typing import (
     Dict,
     Generic,
     Iterable,
+    Iterator,
     List,
     Literal,
     Optional,
@@ -848,3 +852,575 @@ def paired(iterable: Iterable[Any] | tuple[Any, ...]) -> list[tuple[Any, Any]]:
 
 def pairwise(iterable: Iterable[T]) -> list[tuple[T, T]]:
     return list(itertools.pairwise(iterable))
+
+
+class Range:
+    def __init__(
+        self,
+        /,
+        value: int | range | slice | Range | None = None,
+        stop_: int | None = None,
+        step_: int | None = None,
+        *,
+        start: int | None = None,
+        stop: int | None = None,
+        end: int | None = None,
+        step: int | None = None,
+    ) -> None:
+        if stop is not None and not isinstance(stop, int):
+            raise TypeError(f"stop ({stop}) must be int")
+        if start is not None and not isinstance(start, int):
+            raise TypeError(f"start ({start}) must be int")
+        if end is not None and not isinstance(end, int):
+            raise TypeError(f"end ({end}) must be int")
+        if step is not None and not isinstance(step, int):
+            raise TypeError(f"step ({step}) must be int")
+
+        if value is not None and not isinstance(value, (int, range, slice, Range)):
+            raise TypeError(f"first unnamed argument ({value}) must be int, range, slice or Range if specified")
+        if stop_ is not None and (not isinstance(value, int) or not isinstance(stop_, int)):
+            raise TypeError("all unnamed arguments must be int if more than one argument is specified")
+        if step_ is not None and (
+            not isinstance(value, int) or not isinstance(stop_, int) or not isinstance(step_, int)
+        ):
+            raise TypeError("all unnamed arguments must be int if more than one argument is specified")
+
+        if stop_ is not None:
+            stop = stop if stop is not None else stop_
+            if stop != stop_:
+                raise ValueError(f"cannot specify different stop values ({stop} != {stop_})")
+        if step_ is not None:
+            step = step if step is not None else step_
+            if step != step_:
+                raise ValueError(f"cannot specify different step values ({step} != {step_})")
+
+        if value is not None and isinstance(value, int) and stop is None and end is None:
+            start = start if start is not None else 0
+            stop = value
+        elif value is not None and isinstance(value, int) and start is None and (stop is not None or end is not None):
+            start = value
+        elif value is not None and isinstance(value, (range, slice, Range)):
+            start = start if start is not None else (value.start if isinstance(value.start, int) else 0)
+            if not isinstance(value.stop, int):
+                raise TypeError(f"value.stop ({value.stop}) must be int, unbound slice not supported")
+            stop = (
+                stop
+                if stop is not None
+                else (end + 1 if end is not None else (value.stop if isinstance(value.stop, int) else 0))
+            )
+            step = step if step is not None else (value.step if isinstance(value.step, int) else 1)
+        elif value is not None:
+            raise TypeError(f"value ({value}) must be int, range or slice")
+
+        if stop is not None and end is not None and stop - 1 != end:
+            raise ValueError(f"stop ({stop}) - 1 != end ({end})")
+        if step is not None and not step:
+            raise ValueError(f"step ({step}) must not be zero")
+
+        if end is None and stop is not None:
+            end = stop - 1
+        elif end is not None and stop is None:
+            stop = end + 1
+
+        if end is None or stop is None:
+            raise ValueError("must specify either end or stop")
+
+        start = start or 0
+
+        self.start: int = start
+        self.end: int = end
+        self.stop: int = stop
+        self.step: int = 1 if step is None else step
+        self._range: range = range(self.start, self.stop, self.step)
+        self._slice: slice = slice(self.start, self.stop, self.step)
+
+    def index(self, value: int) -> int:
+        return self._range.index(value)
+
+    def count(self, value: int) -> int:
+        return self._range.count(value)
+
+    def __repr__(self) -> str:
+        if len(self) == 0:
+            return f"EmptyRange(length={len(self)})"
+        if self.step == 1:
+            return f"Range(start={self.start}, end={self.end}, _range={self._range}, length={len(self)})"
+        return f"Range(start={self.start}, end={self.end}, step={self.step}, _range={self._range}, length={len(self)})"
+
+    def __len__(self) -> int:
+        return max(0, (self.end - self.start) // self.step + 1)
+
+    def __iter__(self) -> Iterator[int]:
+        return iter(self._range)
+
+    def __contains__(self, value: int) -> bool:
+        return bool(self.count(value))
+
+    @overload
+    def __getitem__(self, idx: int) -> int:
+        ...
+
+    @overload
+    def __getitem__(self, idx: slice) -> Range:
+        ...
+
+    def __getitem__(self, idx: int | slice) -> int | Range:
+        if isinstance(idx, int):
+            return self._range[idx]
+        _range = self._range[idx]
+        if idx.stop is None or idx.stop >= len(self._range):
+            return Range(_range, stop=self._range.stop)
+        return Range(self._range[idx])
+
+    def __eq__(self, other: object) -> bool:
+        if self is other:
+            return True
+        if not isinstance(other, (Range, range, slice)):
+            return False
+        other_ = Range(int(other), int(other) + 1) if isinstance(other, int) else Range(other)
+        if (
+            self.start == other_.start
+            and self.stop == other_.stop
+            and self.end == other_.end
+            and self.step == other_.step
+        ):
+            return True
+        return False
+
+    def __gt__(self, other: int) -> bool:
+        return other < self.start
+
+    def __ge__(self, other: int) -> bool:
+        return other <= self.end
+
+    def __lt__(self, other: int) -> bool:
+        return other > self.end
+
+    def __le__(self, other: int) -> bool:
+        return other >= self.start
+
+    def __hash__(self) -> int:
+        return hash(("Range", self.start, self.stop, self.end, self.step))
+
+    def __copy__(self) -> Range:
+        return Range(self)
+
+    def copy(self) -> Range:
+        return self.__copy__()
+
+    def __deepcopy__(self, memo: dict | None) -> Range:
+        return Range(self)
+
+    def deepcopy(self) -> Range:
+        return self.__deepcopy__(None)
+
+    def __reduce__(self) -> tuple[type[Range], tuple[int, int, int, int]]:
+        return (Range, (self.start, self.stop, self.end, self.step))
+
+    def __add__(self, other: int) -> Range:
+        return Range(start=self.start + other, end=self.end + other, step=self.step)
+
+    def __radd__(self, other: int) -> Range:
+        return Range(start=self.start + other, end=self.end + other, step=self.step)
+
+    def __sub__(self, other: int) -> Range:
+        return self.__add__(-other)
+
+    def __rsub__(self, other: int) -> Range:
+        return self.__radd__(-other)
+
+    def __iadd__(self, other: int) -> None:
+        self.start += other
+        self.stop += other
+        self.end += other
+        self._range = range(self.start, self.stop, self.step)
+        self._slice = slice(self.start, self.stop, self.step)
+
+    def __isub__(self, other: int) -> None:
+        self.__iadd__(-other)
+
+    def __and__(self, other: int | range | slice | Range) -> Range:
+        if isinstance(other, slice):
+            other = slice(other.start or self.start, other.stop or self.stop, other.step or self.step)
+        other_ = Range(int(other), int(other) + 1) if isinstance(other, int) else Range(other)
+        # if other_.step != self.step and max(other_.step, self.step) % min(other_.step, self.step) != 0:
+        #    raise ValueError(f"step ({self.step}) must be evenly divisible with other step ({other_.step})")
+
+        start = max(self.start, other_.start)
+        end = min(self.end, other_.end)
+        step = math.lcm(other_.step, self.step)
+
+        for _ in range(step):
+            if start in self and start in other_:
+                break
+            start += 1
+        else:
+            return EmptyRange()
+
+        result = Range(
+            start=start,
+            end=end,
+            step=step,
+        )
+        return result or EmptyRange()
+
+    def __rand__(self, other: int | range | slice | Range) -> Range:
+        return self.__and__(other)
+
+    def __or__(self, other: int | range | slice | Range) -> Range | Ranges:
+        other_ = Range(int(other), int(other) + 1) if isinstance(other, int) else Range(other)
+        if not self or not other_:
+            return self or other_ or EmptyRange()
+
+        if (
+            (other_.step != self.step and max(other_.step, self.step) % min(other_.step, self.step) != 0)
+            or (other_.step != self.step and (self.start != other_.start or self.end != other_.end))
+            or (other_.start > self.stop or other_.stop < self.start)
+            or not self.__and__(other_)
+        ):
+            if other_.step == self.step and (
+                other_[0] - other_.step == self[-1] or other_[-1] + other_.step == self[0]
+            ):
+                # edge case: adjacent non-intersect
+                return Range(
+                    start=min(self.start, other_.start),
+                    end=max(self.end, other_.end),
+                    step=min(other_.step, self.step),
+                )
+
+            result_ = Ranges(self, other_)
+            if not result_:
+                return EmptyRange()
+            if len(result_.ranges) == 1:
+                return result_.ranges[0]
+            return result_
+
+        return Range(
+            start=min(self.start, other_.start),
+            end=max(self.end, other_.end),
+            step=min(other_.step, self.step),
+        )
+
+    def __ror__(self, other: int | range | slice | Range) -> Range | Ranges:
+        return self.__or__(other)
+
+    def __bool__(self) -> bool:
+        return bool(len(self))
+
+    def __cmp__(self, other: int | range | slice | Range) -> int:
+        other_ = Range(int(other), int(other) + 1) if isinstance(other, int) else Range(other)
+        self_cmp = (self.start, self.stop, self.end, self.step, str(type(self)))
+        other_cmp = (other_.start, other_.stop, other_.end, other_.step, str(type(other)))
+        if self_cmp > other_cmp:
+            return 1
+        if self_cmp < other_cmp:
+            return -1
+        return 0
+
+    @property
+    def _sort_value(self) -> tuple[int, int, int, int, str]:
+        return (self.start, self.stop, self.end, self.step, str(type(self)))
+
+    def __int__(self) -> int:
+        if len(self) != 1:
+            raise ValueError(f"cannot convert range with length {len(self)} to int")
+        return self.start
+
+
+class EmptyRange(Range):
+    def __init__(self) -> None:
+        super().__init__(0)
+
+
+class Ranges:
+    ranges: list[Range]
+    _reentrancy_guard: bool = False
+
+    def __init__(self, *ranges: int | range | slice | Range | Ranges) -> None:
+        result: list[Range] = []
+        for r in ranges:
+            if isinstance(r, Ranges):
+                result.extend(r.ranges)
+            elif isinstance(r, int):
+                result.append(Range(int(r), int(r) + 1))
+            else:
+                result.append(Range(r))
+
+        if type(self)._reentrancy_guard:
+            self.ranges = sorted(result, key=lambda r: r._sort_value)
+            return
+
+        # examples:
+        # (Range(10, 28, 3) | Range(3, 25, 1))
+        # (Range(10, 28, 3) | Range(3, 25, 2))
+        # Range(1, 5).__or__(Range(0, 6, 2))
+        # Range(0, 6, 2).__or__(Range(1, 5))
+        # Range(1, 5).__or__(Range(5, 6))
+        # Range(1, 5).__or__(Range(0, 10, 2))
+        # [i for i in (Range(10, 28, 3) | Range(2, 25, 2))]
+
+        while True:
+            current = result[:]
+            result_ = []
+            while result:
+                range_ = result.pop(0)
+                if not range_:
+                    continue
+                if range_ in result:
+                    continue
+                for r_ in result:
+                    intersection = r_ & range_
+                    if intersection and intersection not in (r_, range_):
+                        if max(r_.step, range_.step) % min(r_.step, range_.step) == 0:
+                            combined_ranges = []
+                            mid_intersection: Range
+                            if range_[0] < r_[0]:
+                                mid_intersection = Range(
+                                    start=min(intersection[0], r_[0]),
+                                    end=intersection.end,
+                                    step=min(r_.step, range_.step),
+                                )
+                            else:
+                                mid_intersection = Range(
+                                    start=min(intersection[0], range_[0]),
+                                    end=intersection.end,
+                                    step=min(r_.step, range_.step),
+                                )
+                            if mid_intersection:
+                                combined_ranges.append(mid_intersection)
+
+                            before_intersection: Range
+                            if range_[0] < r_[0]:
+                                before_intersection = Range(
+                                    start=min(range_[0], mid_intersection[0]),
+                                    stop=mid_intersection[0],
+                                    step=range_.step,
+                                )
+                            else:
+                                before_intersection = Range(
+                                    start=min(r_[0], mid_intersection[0]),
+                                    stop=mid_intersection[0],
+                                    step=r_.step,
+                                )
+                            if before_intersection:
+                                combined_ranges.append(before_intersection)
+
+                            after_intersection: Range
+                            if range_[-1] > r_[-1]:
+                                after_intersection = Range(
+                                    start=intersection.end + mid_intersection.step,
+                                    end=range_[-1],
+                                    step=range_.step,
+                                )
+                                if after_intersection:
+                                    for _ in range(range_.step):
+                                        if after_intersection[0] in range_:
+                                            break
+                                        after_intersection = Range(
+                                            after_intersection, start=after_intersection.start + 1
+                                        )
+                            else:
+                                after_intersection = Range(
+                                    start=intersection.end + mid_intersection.step,
+                                    end=r_[-1],
+                                    step=r_.step,
+                                )
+                                if after_intersection:
+                                    for _ in range(range_.step):
+                                        if after_intersection[0] in r_:
+                                            break
+                                        after_intersection = Range(
+                                            after_intersection, start=after_intersection.start + 1
+                                        )
+                            if after_intersection:
+                                combined_ranges.append(after_intersection)
+
+                            while r_ in result:
+                                result.remove(r_)
+                            result.extend(combined_ranges)
+                            break
+
+                        # todo: ranges with different step-sizes that aren't evenly divisible
+                        # [i for i in (Range(10, 28, 3) | Range(2, 25, 2))]
+                        raise NotImplementedError("non-evenly divisible step not implemented")
+
+                    type(self)._reentrancy_guard = True
+                    try:
+                        # todo: ranges with same step size, but different offset
+                        # [i for i in (Range(10, 28, 3) | Range(2, 25, 3))]
+                        unified_range = r_ | range_
+                        type(self)._reentrancy_guard = False
+                        if (
+                            not unified_range
+                            or len(unified_range) == len(range_)
+                            or len(unified_range) == len(r_)
+                            or len(unified_range) == len(r_) + len(range_)
+                        ):
+                            continue
+                        if isinstance(unified_range, Ranges):
+                            result.extend(unified_range.ranges)
+                            break
+                        if isinstance(unified_range, Range):
+                            result.append(unified_range)
+                            break
+                    finally:
+                        type(self)._reentrancy_guard = False
+                else:
+                    result_.append(range_)
+            result = sorted(result_, key=lambda r: r._sort_value)
+            if result == current:
+                break
+
+        self.ranges = result
+
+    def __repr__(self) -> str:
+        return f"Ranges({self.ranges})"
+
+    def __len__(self) -> int:
+        return sum(len(r) for r in self.ranges)
+
+    def __iter__(self) -> Iterator[int]:
+        for r in self.ranges:
+            yield from r
+
+    def __contains__(self, value: int) -> bool:
+        return any(value in r for r in self.ranges)
+
+    @overload
+    def __getitem__(self, idx: int) -> int:
+        ...
+
+    @overload
+    def __getitem__(self, idx: slice) -> Ranges | Range:
+        ...
+
+    def __getitem__(self, idx: int | slice) -> int | Ranges | Range:
+        if isinstance(idx, int):
+            idx_ = idx
+            if idx_ < 0:
+                idx_ = len(self) + idx_
+            for r in self.ranges:
+                if idx_ < len(r):
+                    return r[idx_]
+                idx_ -= len(r)
+            raise IndexError(f"index ({idx}) out of range")
+        result = []
+        start = idx.start if idx.start is not None else 0
+        stop = idx.stop if idx.stop is not None else len(self)
+        step = idx.step if idx.step is not None else 1
+        if start < 0:
+            start = len(self) + start
+        if stop < 0:
+            stop = len(self) + stop
+        carry = 0
+        for r in self.ranges:
+            if start < 0:
+                start = carry
+            range_ = r[start:stop:step]
+            result.append(range_)
+            start -= len(r)
+            stop -= len(r)
+            carry = len(r[start::step]) * step - len(r[start:])
+            if stop <= 0:
+                break
+        return Ranges(*result)
+
+    def __bool__(self) -> bool:
+        return bool(len(self))
+
+    def __eq__(self, other: object) -> bool:
+        if self is other:
+            return True
+        if isinstance(other, (int, range, slice, Range)):
+            other = Ranges(Range(int(other), int(other) + 1) if isinstance(other, int) else Range(other))
+        if not isinstance(other, Ranges):
+            return False
+        if len(self.ranges) != len(other.ranges):
+            return False
+        return all(r == o for r, o in zip(self.ranges, other.ranges))
+
+    def __gt__(self, other: int) -> bool:
+        return other < min(r.start for r in self.ranges)
+
+    def __ge__(self, other: int) -> bool:
+        return other <= max(r.end for r in self.ranges)
+
+    def __lt__(self, other: int) -> bool:
+        return other > max(r.end for r in self.ranges)
+
+    def __le__(self, other: int) -> bool:
+        return other >= min(r.start for r in self.ranges)
+
+    def __hash__(self) -> int:
+        return hash(("Ranges", tuple(self.ranges)))
+
+    def __copy__(self) -> Ranges:
+        return Ranges(*self.ranges)
+
+    def copy(self) -> Ranges:
+        return self.__copy__()
+
+    def __deepcopy__(self, memo: dict | None) -> Ranges:
+        return Ranges(*[Range(r) for r in self.ranges])
+
+    def deepcopy(self) -> Ranges:
+        return self.__deepcopy__(None)
+
+    def __reduce__(self) -> tuple[type[Ranges], tuple[tuple[Range, ...]]]:
+        return (Ranges, (tuple(self.ranges),))
+
+    def __add__(self, other: int) -> Ranges:
+        return Ranges(*(r + other for r in self.ranges))
+
+    def __radd__(self, other: int) -> Ranges:
+        return Ranges(*(other + r for r in self.ranges))
+
+    def __sub__(self, other: int) -> Ranges:
+        return self.__add__(-other)
+
+    def __rsub__(self, other: int) -> Ranges:
+        return self.__radd__(-other)
+
+    def __iadd__(self, other: int) -> None:
+        for i, r in enumerate(self.ranges):
+            self.ranges[i] = r + other
+
+    def __isub__(self, other: int) -> None:
+        self.__iadd__(-other)
+
+    def __and__(self, other: int | range | slice | Range) -> Range | Ranges:
+        result: list[Range] = []
+        other_ = Range(int(other), int(other) + 1) if isinstance(other, int) else Range(other)
+
+        for r in self.ranges:
+            range_ = r & other_
+            if range_:
+                result.append(range_)
+
+        result_ = Ranges(*result)
+        if not result_:
+            return EmptyRange()
+        if len(result_.ranges) == 1:
+            return result_.ranges[0]
+        return result_
+
+    def __or__(self, other: int | range | slice | Range | Ranges) -> Range | Ranges:
+        if isinstance(other, Ranges):
+            return Ranges(*self.ranges, *other.ranges)
+
+        other_ = Range(int(other), int(other) + 1) if isinstance(other, int) else Range(other)
+        result_ = Ranges(*self.ranges, other_)
+
+        if not result_:
+            return EmptyRange()
+        if len(result_.ranges) == 1:
+            return result_.ranges[0]
+        return result_
+
+    def __ror__(self, other: int | range | slice | Range | Ranges) -> Range | Ranges:
+        return self.__or__(other)
+
+    def __int__(self) -> int:
+        if len(self) != 1:
+            raise ValueError(f"cannot convert range with length {len(self)} to int")
+        return self[0]
