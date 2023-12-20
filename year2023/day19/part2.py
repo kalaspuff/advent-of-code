@@ -16,29 +16,27 @@ class Workflow:
 
 def split_parts(workflows: dict[str, Workflow], workflow: Workflow, part: dict[str, Range]) -> list[dict[str, Range]]:
     parts: list[dict[str, Range]] = []
+
     while True:
         for (attribute, op, threshold), next_ in workflow.rules:
             if (op == ">" and part[attribute] > threshold) or (op == "<" and part[attribute] < threshold):
-                pass
-            elif op == ">" and part[attribute] >= threshold + 1:
+                break
+            if op == ">" and part[attribute] >= threshold + 1:
                 rest, current = part[attribute].split(threshold + 1)
                 parts.append({**part, attribute: rest})
                 part = {**part, attribute: current}
-            elif op == "<" and part[attribute] <= threshold - 1:
+                break
+            if op == "<" and part[attribute] <= threshold - 1:
                 current, rest = part[attribute].split(threshold)
                 parts.append({**part, attribute: rest})
                 part = {**part, attribute: current}
-            else:
-                continue
-            if next_ not in workflows:
-                return [*parts, part] if next_ == "A" else parts
-            workflow = workflows[next_]
-            break
+                break
         else:
             next_ = workflow.fallback
-            if next_ not in workflows:
-                return [*parts, part] if next_ == "A" else parts
-            workflow = workflows[next_]
+
+        if next_ not in workflows:
+            return [*parts, part] if next_ == "A" else parts
+        workflow = workflows[next_]
 
 
 async def run() -> int:
