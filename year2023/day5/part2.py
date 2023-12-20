@@ -3,41 +3,33 @@ from values import values
 
 
 async def run() -> int:
-    seed_ranges: set[tuple[Range, int]] = {
-        (Range(start=start, stop=start + length), 0) for start, length in paired(values[0].ints())
-    }
+    seed_ranges: set[Range] = {Range(start=start, stop=start + length) for start, length in paired(values[0].ints())}
     maps = [rows.filter(lambda row: row.ints()).ints() for rows in values[1:].clean().split_sections("map:")[1:]]
 
     for map_ in maps:
-        updated_ranges: set[tuple[Range, int]] = set()
+        updated_ranges: set[Range] = set()
         while seed_ranges:
-            seed_range = seed_ranges.pop()
-            updated_ranges.add(seed_range)
-
-            range_, modifier = seed_range
-            range_ = range_ + modifier
+            range_ = seed_ranges.pop()
 
             for destination, source, sourcelen in map_:
-                source_ = Range(start=source, stop=source + sourcelen)
-
-                intersect_ = source_ & range_
+                intersect_ = range_ & Range(start=source, stop=source + sourcelen)
                 if not intersect_:
                     continue
 
-                updated_ranges.remove(seed_range)
-                updated_ranges.add((intersect_ - modifier, modifier + (destination - source)))
+                updated_ranges.add(intersect_ + destination - source)
 
                 if begin_range := range_.split(intersect_.start)[0]:
-                    seed_ranges.add((begin_range - modifier, modifier))
+                    seed_ranges.add(begin_range)
                 if end_range := range_.split(intersect_.stop)[1]:
-                    seed_ranges.add((end_range - modifier, modifier))
+                    seed_ranges.add(end_range)
 
                 break
+            else:
+                updated_ranges.add(range_)
 
-        if updated_ranges:
-            seed_ranges = updated_ranges.copy()
+        seed_ranges = updated_ranges.copy()
 
-    return min(min(range_ + modifier for range_, modifier in seed_ranges))
+    return min(min(seed_ranges))
 
 
 # [values.year]            (number)  2023
