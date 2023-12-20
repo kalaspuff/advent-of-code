@@ -1,5 +1,6 @@
 import functools
 
+from helpers import Range
 from values import values
 
 
@@ -13,34 +14,26 @@ class Workflow:
         return f'Workflow("{self.name}", rules={self.rules}, fallback="{self.fallback}")'
 
 
-def split_parts(workflows: dict[str, Workflow], workflow: Workflow, part: dict[str, range]) -> list[dict[str, range]]:
-    parts: list[dict[str, range]] = []
+def split_parts(workflows: dict[str, Workflow], workflow: Workflow, part: dict[str, Range]) -> list[dict[str, Range]]:
+    parts: list[dict[str, Range]] = []
     while True:
         for (attribute, op, threshold), next_ in workflow.rules:
-            if op == ">" and (threshold + 1) not in part[attribute] and threshold < part[attribute].start:
-                if next_ not in workflows:
-                    return [*parts, part] if next_ == "A" else parts
-                workflow = workflows[next_]
-                break
-            if op == "<" and (threshold - 1) not in part[attribute] and threshold >= part[attribute].stop:
-                if next_ not in workflows:
-                    return [*parts, part] if next_ == "A" else parts
-                workflow = workflows[next_]
-                break
-            if op == ">" and (threshold + 1) in part[attribute]:
-                parts.append({**part, attribute: range(part[attribute].start, threshold + 1)})
-                part = {**part, attribute: range(threshold + 1, part[attribute].stop)}
-                if next_ not in workflows:
-                    return [*parts, part] if next_ == "A" else parts
-                workflow = workflows[next_]
-                break
-            if op == "<" and (threshold - 1) in part[attribute]:
-                parts.append({**part, attribute: range(threshold, part[attribute].stop)})
-                part = {**part, attribute: range(part[attribute].start, threshold)}
-                if next_ not in workflows:
-                    return [*parts, part] if next_ == "A" else parts
-                workflow = workflows[next_]
-                break
+            if (op == ">" and part[attribute] > threshold) or (op == "<" and part[attribute] < threshold):
+                pass
+            elif op == ">" and part[attribute] >= threshold + 1:
+                rest, current = part[attribute].split(threshold + 1)
+                parts.append({**part, attribute: rest})
+                part = {**part, attribute: current}
+            elif op == "<" and part[attribute] <= threshold - 1:
+                current, rest = part[attribute].split(threshold)
+                parts.append({**part, attribute: rest})
+                part = {**part, attribute: current}
+            else:
+                continue
+            if next_ not in workflows:
+                return [*parts, part] if next_ == "A" else parts
+            workflow = workflows[next_]
+            break
         else:
             next_ = workflow.fallback
             if next_ not in workflows:
@@ -51,7 +44,7 @@ def split_parts(workflows: dict[str, Workflow], workflow: Workflow, part: dict[s
 async def run() -> int:
     result = 0
     workflows = {}
-    parts = [{k: range(1, 4001) for k in "xmas"}]
+    parts = [{k: Range(start=1, end=4000) for k in "xmas"}]
 
     workflows_input, _ = values.split_sections("\n\n")
 
