@@ -937,6 +937,16 @@ class Range:
     def index(self, value: int) -> int:
         return self._range.index(value)
 
+    def index_near(self, value: int) -> int:
+        if value < self.start:
+            return 0
+        if value > self.end:
+            return len(self) - 1
+        for value_ in range(value, self.stop, 1):
+            if self.count(value_):
+                return self._range.index(value_)
+        raise ValueError(f"value ({value}) not in range")
+
     def count(self, value: int) -> int:
         return self._range.count(value)
 
@@ -1126,6 +1136,10 @@ class Range:
             raise ValueError(f"cannot convert range with length {len(self)} to int")
         return self.start
 
+    def split(self, value: int) -> tuple[Range, Range]:
+        idx = self.index_near(value)
+        return self[:idx], self[idx:]
+
 
 class EmptyRange(Range):
     def __init__(self) -> None:
@@ -1272,6 +1286,34 @@ class Ranges:
                 break
 
         self.ranges = result
+
+    def index(self, value: int) -> int:
+        idx = 0
+        for r in self.ranges:
+            if r.count(value):
+                return idx + r.index(value)
+            idx += len(r)
+        raise ValueError(f"value ({value}) not in range")
+
+    def index_near(self, value: int) -> int:
+        idx = 0
+        start = end = self[0]
+        if value < start:
+            return 0
+        for r in self.ranges:
+            end = r[-1]
+            if value >= start and value <= end:
+                return idx + r.index_near(value)
+            idx += len(r)
+        if value > end:
+            return idx
+        raise ValueError(f"value ({value}) not in range")
+
+    def count(self, value: int) -> int:
+        result = 0
+        for r in self.ranges:
+            result += r.count(value)
+        return result
 
     def __repr__(self) -> str:
         return f"Ranges({self.ranges})"
@@ -1424,3 +1466,7 @@ class Ranges:
         if len(self) != 1:
             raise ValueError(f"cannot convert range with length {len(self)} to int")
         return self[0]
+
+    def split(self, value: int) -> tuple[Range | Ranges, Range | Ranges]:
+        idx = self.index_near(value)
+        return self[:idx], self[idx:]
