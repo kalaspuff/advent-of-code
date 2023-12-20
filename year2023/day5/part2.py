@@ -1,44 +1,43 @@
-from helpers import paired
+from helpers import Range, paired
 from values import values
 
 
 async def run() -> int:
-    seed_ranges: set[tuple[int, int, int]] = {(*pair, 0) for pair in paired(values[0].ints())}
+    seed_ranges: set[tuple[Range, int]] = {
+        (Range(start=start, stop=start + length), 0) for start, length in paired(values[0].ints())
+    }
     maps = [rows.filter(lambda row: row.ints()).ints() for rows in values[1:].clean().split_sections("map:")[1:]]
 
     for map_ in maps:
-        updated_ranges: set[tuple[int, int, int]] = set()
+        updated_ranges: set[tuple[Range, int]] = set()
         while seed_ranges:
             seed_range = seed_ranges.pop()
-            if seed_range in updated_ranges:
-                continue
-            start, length, modifier = seed_range
-            start += modifier
-            end = start + length - 1
-            for destination, source, sourcelen in map_:
-                source_end = source + sourcelen - 1
-                start_max = max(start, source)
-                end_min = min(end, source_end)
+            updated_ranges.add(seed_range)
 
-                if source > end or source_end < start or min(end - start, source_end - source) < 0:
+            range_, modifier = seed_range
+            range_ = range_ + modifier
+
+            for destination, source, sourcelen in map_:
+                source_ = Range(start=source, stop=source + sourcelen)
+
+                intersect_ = source_ & range_
+                if not intersect_:
                     continue
 
-                updated_ranges.add((start_max - modifier, end_min - start_max + 1, modifier + (destination - source)))
+                updated_ranges.remove(seed_range)
+                updated_ranges.add((intersect_ - modifier, modifier + (destination - source)))
 
-                if start < source:
-                    seed_ranges.add((start - modifier, source - start, modifier))
-                if end > source_end:
-                    seed_ranges.add((source_end + 1 - modifier, end - source_end, modifier))
+                if begin_range := range_.split(intersect_.start)[0]:
+                    seed_ranges.add((begin_range - modifier, modifier))
+                if end_range := range_.split(intersect_.stop)[1]:
+                    seed_ranges.add((end_range - modifier, modifier))
 
                 break
-            else:
-                updated_ranges.add(seed_range)
 
         if updated_ranges:
             seed_ranges = updated_ranges.copy()
-            updated_ranges = set()
 
-    return min([start + modifier for start, length, modifier in seed_ranges])
+    return min(min(range_ + modifier for range_, modifier in seed_ranges))
 
 
 # [values.year]            (number)  2023

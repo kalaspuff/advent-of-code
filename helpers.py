@@ -941,7 +941,7 @@ class Range:
         if value < self.start:
             return 0
         if value > self.end:
-            return len(self) - 1
+            return len(self)
         for value_ in range(value, self.stop, 1):
             if self.count(value_):
                 return self._range.index(value_)
