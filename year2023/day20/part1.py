@@ -147,8 +147,8 @@ class Module:
         return pulse
 
     def __repr__(self) -> str:
-        cls = type(self)
-        return f'{cls.__name__.lower().rstrip("module")}("{self.name}")'
+        cls_name = type(self).__name__.lower().rstrip("module") or "module"
+        return f'{cls_name}("{self.name}")'
 
 
 class FlipFlopModule(Module):

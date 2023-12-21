@@ -4,7 +4,8 @@ from values import values
 
 
 class PulseType(type):
-    pass
+    def __repr__(cls) -> str:
+        return f"{cls.__name__}"
 
 
 class LOW(metaclass=PulseType):
@@ -20,11 +21,20 @@ class Pulse:
         self.type = type_
         self.destination = destination
         self.sender = sender
+        self._status = "INIT"
+
+    def process(self) -> None:
+        self._status = "EXEC"
+        try:
+            self.destination.receive_pulse(self)
+            self._status = "DONE"
+        except Exception:
+            self._status = "FAIL"
+            raise
 
     def __repr__(self) -> str:
-        if self.sender is None:
-            return f'Pulse(type={self.type.__name__}, destination="{self.destination.name}")'
-        return f'Pulse(type={self.type.__name__}, destination="{self.destination.name}", sender="{self.sender.name}")'
+        sender_name = f'from: "{self.sender.name}"' if self.sender is not None else "<broadcast>"
+        return f"[pulse: {str(self.type):4s} | {sender_name:21s} >> to: {str(self.destination):25s}    | <{self._status.lower():4s}> |::id:{hex(id(self))}::]"
 
 
 class Module:
@@ -139,7 +149,8 @@ class Module:
         return pulse
 
     def __repr__(self) -> str:
-        return f'{type(self).__name__}(name="{self.name}")'
+        cls_name = type(self).__name__.lower().rstrip("module") or "module"
+        return f'{cls_name}("{self.name}")'
 
 
 class FlipFlopModule(Module):
@@ -183,8 +194,10 @@ class Network:
     _broadcast_count: int
     _pulse_count: dict[PulseType, int]
 
-    def __new__(cls) -> "Network":
+    def __new__(cls, *, singleton: bool = True) -> "Network":
         try:
+            if not singleton:
+                raise AttributeError
             if cls.__network is not None and cls.__network and cls.__network.fget:
                 return cls.__network.fget(cls.__new__)
             return super().__new__(cls)
@@ -194,6 +207,9 @@ class Network:
             network._queue = []
             network._broadcast_count = 0
             network._pulse_count = {LOW: 0, HIGH: 0}
+
+            if not singleton:
+                return network
 
             sentinel = cls.__new__
 
@@ -230,6 +246,7 @@ class Network:
 
     def queue_pulse(self, pulse: Pulse) -> None:
         self._queue.append(pulse)
+        pulse._status = "WAIT"
 
     def broadcast_pulse(self, type_: PulseType = LOW) -> Pulse:
         self._broadcast_count += 1
@@ -243,6 +260,7 @@ class Network:
         pulse = self._queue.pop(0) if self._queue else None
         if pulse:
             self._pulse_count[pulse.type] += 1
+            pulse._status = "NEXT"
         return pulse
 
     def __getitem__(self, name: str) -> Module:
@@ -250,11 +268,14 @@ class Network:
             raise KeyError(f"module {name} not found")
         return self._network[name]
 
-    def get(self, name: str, default: object = None) -> Module | object:
-        return self._network.get(name, default)
-
     def __contains__(self, name: str) -> bool:
         return name in self._network
+
+    def __repr__(self) -> str:
+        return f"network({', '.join([f'{module}' for module in self._network.values()])})"
+
+    def get(self, name: str, default: object = None) -> Module | object:
+        return self._network.get(name, default)
 
     @property
     def broadcaster(self) -> BroadcastModule:
