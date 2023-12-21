@@ -1,66 +1,58 @@
-broadcaster -> high
-&work -> first
-&first -> a, yyyy
-%a -> b
-%b -> c
-%c -> d
-%d -> e, x
-%e -> f, yy
-&f -> g, lk
-%g -> h, x
-%h -> i, x
-%i -> j, ll
-%ll -> lk, li
-&lk -> li, yy
-&li -> yy, x
-%j -> k, x
-&x -> y
-%y -> yy
-&yy -> z, yyy
-&yyy -> yyy0
-%yyy0 -> togglecondtwo
-%z -> zz
-%zz -> zzz
-&zzz -> zzzz
-%zzzz -> zzzzz, togglecondone
-%yyyy -> yyy1, yyy00
-&yyy00 -> yyy, yyy11
-%yyy11 -> yyyy, x
-%yyy22 -> a
-%yyy1 -> yyy2
-%yyy2 -> yyy3
-%yyy3 -> yyy4
-%yyy4 -> yyy5
-%yyy5 -> yyy6
-%yyy6 -> yyy7
-%yyy7 -> yyy8
-%yyy8 -> yyy9
-%yyy9 -> yyy
-&high -> lowinit, lowreset
-&lowinit -> xsuppress
-&suppress -> xsuppress
-%xsuppress -> low, suppress
-&low -> lowinv, xoness, xtwoss
-%lowinv -> work
-&xone -> one
-&xtwo -> two
-&togglecondone -> togglecondoneinv
-&togglecondtwo -> togglecondtwoinv
-&togglecondoneinv -> togglecondoneinvx
-&togglecondtwoinv -> togglecondtwoinvx
-&togglecondonerevert -> togglecondoneinvx
-&togglecondtworevert -> togglecondtwoinvx
-%togglecondoneinvx -> condonework, togglecondonerevert
-%togglecondtwoinvx -> condtwowork, togglecondtworevert
-&condonework -> condone
-&condtwowork -> condtwo
-&condoneworkinv -> condones
-&condtwoworkinv -> condtwos
-&condone -> xone
-&condtwo -> xtwo
-&one -> sender
-&two -> sender
-&sender -> rx
-&xxx -> high, work, second, condlow, lowreset, togglecondone, togglecondtwo
-%reset -> resetinv
-&resetinv -> asdsadasd
+broadcaster -> AAAAA, BBBBB, CCCCC, DDDDD
+%AAAAA -> axxxx, a0000
+%a0000 -> axxxx, a1111
+%a1111 -> a2222
+%a2222 -> a3333, axxxx
+%a3333 -> axxxx, a4444
+%a4444 -> a5555, axxxx
+%a5555 -> a6666
+%a6666 -> a7777, axxxx
+%a7777 -> a8888, axxxx
+%a8888 -> axxxx, a9900
+%a9900 -> a9999, axxxx
+%a9999 -> axxxx
+&axxxx -> a1111, a5555, resultA, AAAAA
+%BBBBB -> bxxxx, b0000
+%b0000 -> b1111, bxxxx
+%b1111 -> b2222
+%b2222 -> b3333
+%b3333 -> b4444, bxxxx
+%b4444 -> b5555
+%b5555 -> b6666, bxxxx
+%b6666 -> b7777
+%b7777 -> bxxxx, b8888
+%b8888 -> b9900, bxxxx
+%b9900 -> b9999, bxxxx
+%b9999 -> bxxxx
+&bxxxx -> b4444, b1111, b6666, BBBBB, b2222, resultB
+%CCCCC -> cxxxx, c0000
+%c0000 -> c1111
+%c1111 -> c2222
+%c2222 -> c3333
+%c3333 -> c4444, cxxxx
+%c4444 -> c5555
+%c5555 -> c6666, cxxxx
+%c6666 -> c7777, cxxxx
+%c7777 -> c8888
+%c8888 -> c9900, cxxxx
+%c9900 -> cxxxx, c9999
+%c9999 -> cxxxx
+&cxxxx -> c2222, CCCCC, c4444, resultC, c7777, c0000, c1111
+%DDDDD -> dxxxx, d0000
+%d0000 -> d1111, dxxxx
+%d1111 -> d2222
+%d2222 -> dxxxx, d3333
+%d3333 -> dxxxx, d4444
+%d4444 -> d5555
+%d5555 -> d6666
+%d6666 -> dxxxx, d7777
+%d7777 -> d8888
+%d8888 -> dxxxx, d9900
+%d9900 -> dxxxx, d9999
+%d9999 -> dxxxx
+&dxxxx -> d1111, d4444, DDDDD, d5555, d7777, resultD
+&resultA -> result
+&resultB -> result
+&resultC -> result
+&resultD -> result
+&result -> rx
