@@ -1,0 +1,66 @@
+broadcaster -> high
+&work -> first
+&first -> a, yyyy
+%a -> b
+%b -> c
+%c -> d
+%d -> e, x
+%e -> f, yy
+&f -> g, lk
+%g -> h, x
+%h -> i, x
+%i -> j, ll
+%ll -> lk, li
+&lk -> li, yy
+&li -> yy, x
+%j -> k, x
+&x -> y
+%y -> yy
+&yy -> z, yyy
+&yyy -> yyy0
+%yyy0 -> togglecondtwo
+%z -> zz
+%zz -> zzz
+&zzz -> zzzz
+%zzzz -> zzzzz, togglecondone
+%yyyy -> yyy1, yyy00
+&yyy00 -> yyy, yyy11
+%yyy11 -> yyyy, x
+%yyy22 -> a
+%yyy1 -> yyy2
+%yyy2 -> yyy3
+%yyy3 -> yyy4
+%yyy4 -> yyy5
+%yyy5 -> yyy6
+%yyy6 -> yyy7
+%yyy7 -> yyy8
+%yyy8 -> yyy9
+%yyy9 -> yyy
+&high -> lowinit, lowreset
+&lowinit -> xsuppress
+&suppress -> xsuppress
+%xsuppress -> low, suppress
+&low -> lowinv, xoness, xtwoss
+%lowinv -> work
+&xone -> one
+&xtwo -> two
+&togglecondone -> togglecondoneinv
+&togglecondtwo -> togglecondtwoinv
+&togglecondoneinv -> togglecondoneinvx
+&togglecondtwoinv -> togglecondtwoinvx
+&togglecondonerevert -> togglecondoneinvx
+&togglecondtworevert -> togglecondtwoinvx
+%togglecondoneinvx -> condonework, togglecondonerevert
+%togglecondtwoinvx -> condtwowork, togglecondtworevert
+&condonework -> condone
+&condtwowork -> condtwo
+&condoneworkinv -> condones
+&condtwoworkinv -> condtwos
+&condone -> xone
+&condtwo -> xtwo
+&one -> sender
+&two -> sender
+&sender -> rx
+&xxx -> high, work, second, condlow, lowreset, togglecondone, togglecondtwo
+%reset -> resetinv
+&resetinv -> asdsadasd

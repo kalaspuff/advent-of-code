@@ -29,52 +29,61 @@ class Module:
     name: str
     _destinations: list[str]
     _inputs: list[str]
-
-    _network: dict[str, "Module"]
-    _pulse_queue: list[Pulse]
+    _state: object
+    _default_state: property
 
     def __new__(cls, name: str):
         self = super().__new__(cls)
 
-        self.name = name
-        self._destinations = cls._network[name]._destinations if name in cls._network else []
-        self._inputs = cls._network[name]._inputs if name in cls._network else []
+        network = Network()
 
-        cls._network[name] = self
+        self.name = name
+        self._destinations = []
+        self._inputs = []
+        self._state = getattr(self, "_default_state", None)
+
+        if name in network:
+            self.add_destinations(network[name].destinations)
+            self.add_inputs(network[name].inputs)
+
+        network.add_module(self)
 
         return self
 
-    @classmethod
-    def _update_config(cls, network: dict[str, "Module"], pulse_queue: list[Pulse]) -> None:
-        cls._network = network
-        cls._pulse_queue = pulse_queue
-
-    def add_destination(self, destination: "Module | str"):
+    def add_destination(self, destination: "Module | str") -> None:
         if isinstance(destination, str):
-            destination = self._network[destination] if destination in self._network else Module(destination)
+            network = Network()
+            destination = network[destination] if destination in network else network.create_module(destination)
 
         destination.add_input(self)
         if destination.name not in self._destinations:
             self._destinations.append(destination.name)
 
-    def add_destinations(self, destinations: list["Module"] | list[str]):
+    def add_destinations(self, destinations: list["Module"] | list[str]) -> None:
         for destination in destinations:
             self.add_destination(destination)
 
     def add_input(self, input_: "Module | str") -> None:
         if isinstance(input_, str):
-            input_ = self._network[input_] if input_ in self._network else Module(input_)
+            network = Network()
+            input_ = network[input_] if input_ in network else network.create_module(input_)
 
         if input_.name not in self._inputs:
             self._inputs.append(input_.name)
 
+    def add_inputs(self, inputs: list["Module"] | list[str]) -> None:
+        for input_ in inputs:
+            self.add_input(input_)
+
     @property
     def destinations(self) -> list["Module"]:
-        return [self._network[destination] for destination in self._destinations]
+        network = Network()
+        return [network[destination] for destination in self._destinations]
 
     @property
     def inputs(self) -> list["Module"]:
-        return [self._network[dest] for dest in self._inputs]
+        network = Network()
+        return [network[dest] for dest in self._inputs]
 
     @property
     def pulse_type(self) -> PulseType:
@@ -94,17 +103,15 @@ class Module:
         return Pulse(self.pulse_type, destination=destination, sender=self)
 
     def _send_pulse(self, destination: "Module"):
-        if isinstance(destination, str):
-            destination = self._network[destination]
-        self._pulse_queue.append(self._create_pulse(destination))
+        Network().queue_pulse(self._create_pulse(destination))
 
     def __repr__(self) -> str:
         return f'{type(self).__name__}(name="{self.name}")'
 
 
 class FlipFlopModule(Module):
-    def __init__(self, name: str) -> None:
-        self._state = False
+    _state: bool
+    _default_state = property(lambda self: False)
 
     @property
     def pulse_type(self) -> PulseType:
@@ -118,8 +125,8 @@ class FlipFlopModule(Module):
 
 
 class ConjunctionModule(Module):
-    def __init__(self, name: str) -> None:
-        self._state: dict[Module, PulseType] = {}
+    _state: dict[Module, PulseType]
+    _default_state = property(lambda self: {})
 
     @property
     def pulse_type(self) -> PulseType:
@@ -136,12 +143,84 @@ class BroadcastModule(Module):
         self.send_pulse()
 
 
-async def run() -> int:
-    network: dict[str, "Module"] = {}
-    pulse_queue: list[Pulse] = []
-    Module._update_config(network, pulse_queue)
+class Network:
+    _network: dict[str, Module]
+    _queue: list[Pulse]
+    _broadcaster: BroadcastModule
+    _broadcast_count: int
+    _pulse_count: dict[PulseType, int]
 
-    broadcaster = BroadcastModule("broadcaster")
+    def __new__(cls) -> "Network":
+        try:
+            if cls.__network is not None and cls.__network and cls.__network.fget:
+                return cls.__network.fget(cls.__new__)
+            return super().__new__(cls)
+        except AttributeError:
+            network = super().__new__(cls)
+            network._network = {}
+            network._queue = []
+            network._broadcast_count = 0
+            network._pulse_count = {LOW: 0, HIGH: 0}
+
+            sentinel = cls.__new__
+
+            def func(sentinel_):
+                return network if sentinel_ is sentinel else None
+
+            cls.__network = property(lambda *args: func(*args))
+            return network
+
+    def add_module(self, module: Module) -> Module:
+        self._network[module.name] = module
+        if isinstance(module, BroadcastModule) and module.name == "broadcaster":
+            self._broadcaster = module
+        return module
+
+    def create_module(self, name: str) -> Module:
+        module = Module(name)
+        self._network[name] = module
+        return module
+
+    def queue_pulse(self, pulse: Pulse) -> None:
+        self._queue.append(pulse)
+
+    def broadcast_pulse(self, type_: PulseType = LOW) -> None:
+        self._broadcast_count += 1
+        self.queue_pulse(Pulse(type_, destination=self.broadcaster))
+
+    @property
+    def queue(self) -> list[Pulse]:
+        return self._queue
+
+    def next_pulse(self) -> Pulse | None:
+        pulse = self._queue.pop(0) if self._queue else None
+        if pulse:
+            self._pulse_count[pulse.type] += 1
+        return pulse
+
+    def __getitem__(self, name: str) -> Module:
+        if name not in self._network:
+            raise KeyError(f"module {name} not found")
+        return self._network[name]
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._network
+
+    @property
+    def broadcaster(self) -> BroadcastModule:
+        return self._broadcaster
+
+    @property
+    def broadcast_count(self) -> int:
+        return self._broadcast_count
+
+    @property
+    def pulse_count(self) -> dict[PulseType, int]:
+        return self._pulse_count
+
+
+async def run() -> int:
+    network = Network()
 
     for module_char, (name, *destinations) in zip([row[0] for row in values], values.alphanums()):
         match module_char:
@@ -150,29 +229,17 @@ async def run() -> int:
             case "&":
                 ConjunctionModule(name).add_destinations(destinations)
             case "b" if name == "broadcaster":
-                broadcaster.add_destinations(destinations)
+                BroadcastModule(name).add_destinations(destinations)
             case _:
-                raise ValueError(f"invalid module char: {module_char}")
+                raise ValueError(f"invalid module char: {module_char} (name: {name})")
 
-    pulse_count: dict[PulseType, int] = {HIGH: 0, LOW: 0}
-
-    result = 0
-    num_pushes = 0
-
-    while not result:
-        num_pushes += 1
-        broadcaster.trigger_pulse()
-        while pulse_queue:
-            pulse = pulse_queue.pop(0)
-            pulse_count[pulse.type] += 1
-
+    while network.broadcast_count < 1000:
+        network.broadcast_pulse(LOW)
+        while pulse := network.next_pulse():
             destination = pulse.destination
             destination.receive_pulse(pulse)
 
-        if num_pushes == 1000:
-            result = pulse_count[HIGH] * pulse_count[LOW]
-
-    return result
+    return network.pulse_count[LOW] * network.pulse_count[HIGH]
 
 
 # [values.year]            (number)  2023
