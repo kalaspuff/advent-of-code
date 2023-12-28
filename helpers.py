@@ -6,13 +6,16 @@ import itertools
 import math
 import re
 from collections import Counter, deque
-from itertools import combinations, permutations, product
+from functools import lru_cache
+from itertools import combinations, cycle, islice, permutations, product
 from types import GenericAlias as _GenericAlias
 from typing import (
+    TYPE_CHECKING,
     Annotated,
     Any,
     Callable,
     Dict,
+    Generator,
     Generic,
     Iterable,
     Iterator,
@@ -42,6 +45,8 @@ R = TypeVar("R")
 R_co = TypeVar("R_co", covariant=True)
 
 P = ParamSpec("P")
+
+Ts = TypeVarTuple("Ts")
 
 T1 = TypeVar("T1")
 T2 = TypeVar("T2")
@@ -193,6 +198,7 @@ def binary_space_partitioning(
     return b
 
 
+@lru_cache(65536, True)
 def manhattan_distance(
     pos_1: Union[tuple[int, ...], tuple[int, int], map, range],
     pos_2: Union[tuple[int, ...], tuple[int, int], map, range],
@@ -205,6 +211,7 @@ def manhattan_distance(
     return max(pos_1[0], pos_2[0]) - min(pos_1[0], pos_2[0]) + max(pos_1[1], pos_2[1]) - min(pos_1[1], pos_2[1])
 
 
+@lru_cache(65536, True)
 def position_ranges(
     pos_1: Union[tuple[int, ...], tuple[int, int], map], pos_2: Union[tuple[int, ...], tuple[int, int], map]
 ) -> tuple[range, range]:
@@ -247,6 +254,11 @@ def tuple_sum(*values: T) -> T:
 
 
 def tuple_sum(*values: T) -> T:
+    return cast(T, _tuple_sum(*values))
+
+
+@lru_cache(65536, True)
+def _tuple_sum(*values: T) -> T:
     result: list[int] = []
 
     for value in values:
@@ -274,6 +286,11 @@ def tuple_negative(value: T) -> T:
 
 
 def tuple_negative(value: T) -> T:
+    return cast(T, _tuple_negative(value))
+
+
+@lru_cache(65536, True)
+def _tuple_negative(value: T) -> T:
     return cast(T, tuple(-v for v in cast(Iterable, value)))
 
 
@@ -293,7 +310,7 @@ def tuple_add(value: T, mod: T) -> T:
 
 
 def tuple_add(value: T, mod: T) -> T:
-    return cast(T, tuple_sum(value, mod))
+    return cast(T, _tuple_sum(value, mod))
 
 
 @overload
@@ -312,7 +329,7 @@ def tuple_sub(value: T, mod: T) -> T:
 
 
 def tuple_sub(value: T, mod: T) -> T:
-    return tuple_sum(value, tuple_negative(mod))
+    return _tuple_sum(value, _tuple_negative(mod))
 
 
 def split_to_dict(
@@ -854,6 +871,176 @@ def pairwise(iterable: Iterable[T]) -> list[tuple[T, T]]:
     return list(itertools.pairwise(iterable))
 
 
+def find_cyclic_pattern(
+    sequence: list[int] | tuple[int, ...], pattern_length_range: range | int = range(2, 30)
+) -> list[int] | None:
+    if isinstance(pattern_length_range, int):
+        pattern_length_range = range(pattern_length_range, pattern_length_range + 1)
+    pattern_length_range = range(min(pattern_length_range), max(pattern_length_range) + 1)
+    for pattern_length in pattern_length_range[::-1]:
+        if pattern_length * 2 > len(sequence):
+            continue
+        pattern = list(sequence[-pattern_length:])
+        sequence_ = list(sequence[-pattern_length * 2 : -pattern_length])
+        if list(islice(cycle(pattern), len(sequence_))) == sequence_:
+            return pattern
+
+    return None
+
+
+if TYPE_CHECKING:
+    tuple_base = tuple[*Ts]
+else:
+    tuple_base = Generic
+
+
+class UnpackAnyFalsy(tuple_base[Unpack[Ts]]):
+    _values: tuple[Union[Unpack[Ts]], ...]
+    __args__: tuple[type[Union[Unpack[Ts]]], ...]
+
+    def __new__(cls, *values: Unpack[Ts]) -> UnpackAnyFalsy[Unpack[Ts]]:
+        self = super().__new__(cls)
+        self.__args__ = tuple(type(v) for v in values)  # tuple(type[values] for v in values)
+        self._values = values[:]
+        self._index = 0
+        return cast(UnpackAnyFalsy[Unpack[Ts]], self)
+
+    def __repr__(self) -> str:
+        return self._values.__repr__()
+
+    @overload
+    def __getitem__(self, index: int) -> Union[Unpack[Ts]]:
+        ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Union[Unpack[Ts]] | tuple[Unpack[Ts]]:
+        ...
+
+    def __getitem__(self, index: int | slice) -> Union[Unpack[Ts]] | tuple[Unpack[Ts]]:
+        print("GETITEM", self, index)
+        if isinstance(index, int):
+            return self._values[index]
+        if isinstance(index, slice):
+            return self._values[index]
+        raise TypeError(f"index must be int or slice, not {type(index)}")
+
+    def __setitem__(self, index: int, value: Any) -> None:
+        raise NotImplementedError
+
+    def __iter__(self) -> Iterator[Union[Unpack[Ts]]]:
+        self._index = 0
+
+        parent = self
+
+        class iterator_unpackany(tuple[*Ts]):  # noqa: N801
+            def __iter__(self) -> Iterator[Union[Unpack[Ts]]]:
+                self._index = 0
+                return self
+
+            def __next__(self) -> Union[Unpack[Ts]]:
+                if self._index >= len(parent._values):
+                    raise StopIteration
+                self._index += 1
+                return parent._values[self._index - 1]
+
+        it = iter(iterator_unpackany(self._values))
+        return cast(Iterator[Union[Unpack[Ts]]], it)
+
+    def __next__(self) -> Union[Unpack[Ts]]:
+        if self._index >= len(self._values):
+            raise StopIteration
+        self._index += 1
+        return self._values[self._index - 1]
+
+    def __length_hint__(self) -> int:
+        return len(self._values)
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __eq__(self, other: object) -> bool:
+        return bool(other) if not self.__bool__() else bool(self._values == other)
+
+    def __len__(self) -> int:
+        return 0
+
+
+Sequence.register(UnpackAnyFalsy)
+Iterable.register(UnpackAnyFalsy)
+Iterator.register(UnpackAnyFalsy)
+
+
+def find_layered_cyclic_pattern(
+    sequence: list[int] | tuple[int, ...],
+    layers: int = 3,
+    pattern_length_range: range | int = range(2, 30),
+    offset_range: range | int = range(1, 30),
+) -> tuple[list[list[int]], int, int, list[int]] | UnpackAnyFalsy[list[list[int]], int, int, list[int]]:
+    if isinstance(offset_range, int):
+        offset_range = range(offset_range, offset_range + 1)
+    offset_range = range(min(offset_range), max(offset_range) + 1)
+    for offset in offset_range[::-1]:
+        sequences: list[list[int]] = [list(sequence), *sequence_delta_layers(sequence, layers, offset)]
+        pattern: list[int] | None = []
+        for layer, sequence_ in enumerate(sequences):
+            pattern = find_cyclic_pattern(sequence_, pattern_length_range)
+            if pattern:
+                sequences_ = [sequences[i][-len(pattern) * 2 :] for i in range(len(sequences))]
+                return sequences_, layer, len(pattern), pattern
+
+    sequences = []
+    pattern = []
+    return UnpackAnyFalsy(sequences, -1, 0, pattern)
+
+
+def sequence_delta_offset(sequence: list[int] | tuple[int, ...], offset: int = 1) -> list[int]:
+    return [sequence[i + offset] - sequence[i] for i in range(len(sequence) - offset)]
+
+
+def sequence_delta_layers(sequence: list[int] | tuple[int, ...], layers: int = 3, offset: int = 1) -> list[list[int]]:
+    sequences = [sequence_delta_offset(sequence, offset)]
+    for _ in range(1, layers):
+        sequences.append(sequence_delta_offset(sequences[-1], offset))
+    return sequences
+
+
+def sequence_offset_sum(sequence: list[int] | tuple[int, ...], offset: int = 1) -> list[int]:
+    return [sequence[i + offset] + sequence[i] for i in range(len(sequence) - offset)]
+
+
+def sum_sequence(
+    *sequence: list[int]
+    | list[list[int] | tuple[int, ...]]
+    | tuple[int, ...]
+    | tuple[list[int] | tuple[int, ...], ...],
+) -> list[int]:
+    sequences: list[list[int]] = []
+    for seq in sequence:
+        if (
+            isinstance(seq, (list, tuple))
+            and len(seq)
+            and isinstance(seq[0], (list, tuple))
+            and len(seq[0])
+            and isinstance(seq[0][0], int)
+            and not isinstance(seq, int)
+        ):
+            for sub_seq in seq:
+                if isinstance(sub_seq, int):
+                    raise ValueError(f"Invalid sequence: {seq}")
+                for sub_seq_ in sub_seq:
+                    if not isinstance(sub_seq_, int):
+                        raise ValueError(f"Invalid sequence: {seq}")
+                sequences.append([s for s in sub_seq if isinstance(s, int)])
+        elif isinstance(seq, (list, tuple)) and len(seq) and isinstance(seq[0], int):
+            for sub_seq in seq:
+                if not isinstance(sub_seq, int):
+                    raise ValueError(f"Invalid sequence: {seq}")
+            sequences.append([s for s in seq if isinstance(s, int)])
+        else:
+            raise ValueError(f"Invalid sequence: {seq}")
+    return [sum(*v) for v in zip(sequences)]
+
+
 class Range:
     def __init__(
         self,
@@ -935,9 +1122,17 @@ class Range:
         self._slice: slice = slice(self.start, self.stop, self.step)
 
     def index(self, value: int) -> int:
+        if isinstance(value, float) and not isinstance(value, int) and value.is_integer():
+            value = int(value)
+        if not isinstance(value, int):
+            raise TypeError(f"value ({value}) must be int")
         return self._range.index(value)
 
     def index_near(self, value: int) -> int:
+        if isinstance(value, float) and not isinstance(value, int) and value.is_integer():
+            value = int(value)
+        if not isinstance(value, int):
+            raise TypeError(f"value ({value}) must be int")
         if value < self.start:
             return 0
         if value > self.end:
@@ -948,6 +1143,11 @@ class Range:
         raise ValueError(f"value ({value}) not in range")
 
     def count(self, value: int) -> int:
+        if isinstance(value, float) and not isinstance(value, int) and value.is_integer():
+            value = int(value)
+        if not isinstance(value, int):
+            return 0
+
         return self._range.count(value)
 
     def __repr__(self) -> str:
@@ -963,7 +1163,19 @@ class Range:
     def __iter__(self) -> Iterator[int]:
         return iter(self._range)
 
-    def __contains__(self, value: int) -> bool:
+    @overload
+    def __contains__(self, value: int | float) -> bool:
+        ...
+
+    @overload
+    def __contains__(self, value: str | None) -> Literal[False]:
+        ...
+
+    def __contains__(self, value: object) -> bool:
+        if isinstance(value, float) and not isinstance(value, int) and value.is_integer():
+            value = int(value)
+        if not isinstance(value, int):
+            return False
         return bool(self.count(value))
 
     @overload
@@ -1288,6 +1500,10 @@ class Ranges:
         self.ranges = result
 
     def index(self, value: int) -> int:
+        if isinstance(value, float) and not isinstance(value, int) and value.is_integer():
+            value = int(value)
+        if not isinstance(value, int):
+            raise TypeError(f"value ({value}) must be int")
         idx = 0
         for r in self.ranges:
             if r.count(value):
@@ -1296,6 +1512,10 @@ class Ranges:
         raise ValueError(f"value ({value}) not in range")
 
     def index_near(self, value: int) -> int:
+        if isinstance(value, float) and not isinstance(value, int) and value.is_integer():
+            value = int(value)
+        if not isinstance(value, int):
+            raise TypeError(f"value ({value}) must be int")
         idx = 0
         start = end = self[0]
         if value < start:
@@ -1310,6 +1530,10 @@ class Ranges:
         raise ValueError(f"value ({value}) not in range")
 
     def count(self, value: int) -> int:
+        if isinstance(value, float) and not isinstance(value, int) and value.is_integer():
+            value = int(value)
+        if not isinstance(value, int):
+            return 0
         result = 0
         for r in self.ranges:
             result += r.count(value)
@@ -1326,6 +1550,10 @@ class Ranges:
             yield from r
 
     def __contains__(self, value: int) -> bool:
+        if isinstance(value, float) and not isinstance(value, int) and value.is_integer():
+            value = int(value)
+        if not isinstance(value, int):
+            return False
         return any(value in r for r in self.ranges)
 
     @overload

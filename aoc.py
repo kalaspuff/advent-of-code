@@ -26,6 +26,7 @@ part = int(
     sys.argv[3].replace("part-", "").replace("part_", "").replace("part", "").replace(".py", "").replace("p", "")
 )
 
+
 cwd = str(pathlib.Path(__file__).parent.absolute())
 year_path = f"{cwd}/year{year}"
 day_path = f"{year_path}/day{day}"
@@ -75,6 +76,8 @@ values.part = part
 values.input_filename = relative_filename
 values.result = []
 values.counter = 0
+
+sys.setrecursionlimit(1000000)
 
 
 async def _async() -> None:

@@ -11,6 +11,10 @@ packages = [
 python = "^3.11"
 prompt_toolkit = "^3.0.36"
 utcnow = "^0.3.8"
+networkx = "^3.2"
+sympy = "^1.12"
+z3-solver = "^4.12"
+numpy = "^1.26"
 
 [tool.poetry.scripts]
 advent-of-code = "cli:main"

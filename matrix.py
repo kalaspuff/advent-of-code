@@ -460,6 +460,10 @@ class Matrix:
             x_ -= self.width
         while self._options.get("infinite_y") and y_ > self.max_y:
             y_ -= self.height
+        while self._options.get("infinite_x") and x_ < self.min_x:
+            x_ += self.width
+        while self._options.get("infinite_y") and y_ < self.min_y:
+            y_ += self.height
 
         try:
             return self.coordinates[x_, y_]
@@ -533,6 +537,10 @@ class Matrix:
             x_ -= self.width
         while self._options.get("infinite_y") and y_ > self.max_y:
             y_ -= self.height
+        while self._options.get("infinite_x") and x_ < self.min_x:
+            x_ += self.width
+        while self._options.get("infinite_y") and y_ < self.min_y:
+            y_ += self.height
 
         try:
             self.coordinates[x_, y_] = value

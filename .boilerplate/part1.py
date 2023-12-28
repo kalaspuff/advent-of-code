@@ -1,14 +1,20 @@
 import functools
+import heapq
 import itertools
 import math
 import re
 from collections import Counter, deque
-from itertools import combinations, permutations, product
+from functools import cache, lru_cache, reduce
+from itertools import combinations, cycle, islice, permutations, product
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, TypeVar, Union
 
 import helpers
 from helpers import (
+    Range,
+    Ranges,
     batched,
+    find_cyclic_pattern,
+    find_layered_cyclic_pattern,
     inverse,
     inverse_dict,
     manhattan_distance,
@@ -16,6 +22,9 @@ from helpers import (
     paired,
     pairwise,
     position_ranges,
+    sequence_delta_layers,
+    sequence_delta_offset,
+    sequence_offset_sum,
     transform,
     transform_dict,
     transform_tuple,
