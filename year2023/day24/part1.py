@@ -82,4 +82,4 @@ async def run():
 # [values.part]            (number)  1
 # [values.input_filename]  (str)     ./year2023/day24/input
 #
-# Result: 18098 + 886858737029295
+# Result: 18098
