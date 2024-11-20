@@ -95,9 +95,9 @@ async def run() -> int:
     return result
 
 
-# [values.year]            (number)  2023
+# [values.year]            (number)  2024
 # [values.day]             (number)  0
 # [values.part]            (number)  1
-# [values.input_filename]  (str)     ./year2023/day0/input
+# [values.input_filename]  (str)     ./year2024/day0/input
 #
 # Result: ...
