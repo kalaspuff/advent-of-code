@@ -1,3 +1,4 @@
+from helpers import pairwise
 from values import values
 
 
