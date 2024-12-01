@@ -79,6 +79,7 @@ ignore = [
     "PLR0912", # function complexity
     "PLR0915", # function complexity
     "UP035", # import from collections.abc instead
+    "E741", # ambiguous variable name
 ]
 src = [
     "*.py",
