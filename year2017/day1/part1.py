@@ -5,7 +5,7 @@ from values import values
 async def run() -> int:
     result = 0
 
-    row = str(values[0]) + str(values[0][0])
+    row = values.input + values.input[0]
     for c1, c2 in pairwise(row):
         if c1 == c2:
             result += int(c1)
