@@ -2,14 +2,10 @@ from values import values
 
 
 async def run() -> int:
-    left_list = []
-    right_list = []
+    left = [l for l, _ in values.ints()]
+    right = [r for _, r in values.ints()]
 
-    for row in values.ints():
-        left_list.append(row[0])
-        right_list.append(row[1])
-
-    return sum(abs(l - r) for l, r in zip(sorted(left_list), sorted(right_list)))
+    return sum(abs(l - r) for l, r in zip(sorted(left), sorted(right)))
 
 
 # [values.year]            (number)  2024

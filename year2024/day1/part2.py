@@ -2,14 +2,10 @@ from values import values
 
 
 async def run() -> int:
-    left_list = []
-    right_list = []
+    left = [l for l, _ in values.ints()]
+    right = [r for _, r in values.ints()]
 
-    for row in values.ints():
-        left_list.append(row[0])
-        right_list.append(row[1])
-
-    return sum(l * right_list.count(l) for l in left_list)
+    return sum(l * right.count(l) for l in left)
 
 
 # [values.year]            (number)  2024
