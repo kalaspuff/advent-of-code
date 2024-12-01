@@ -4,7 +4,7 @@ from values import values
 async def run() -> int:
     result = 0
 
-    row = str(values[0])
+    row = values.input
     circular_row = row * 2
     for i, c1 in enumerate(row):
         c2 = circular_row[i + len(row) // 2]
