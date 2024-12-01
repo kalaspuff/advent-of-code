@@ -1,21 +1,15 @@
-import functools
-import heapq
-import itertools
-import math
-import re
-from itertools import combinations, cycle, islice, permutations, product
-
-import helpers
 from values import values
 
 
 async def run() -> int:
-    result = 0
+    left_list = []
+    right_list = []
 
-    for row in values:
-        pass
+    for row in values.ints():
+        left_list.append(row[0])
+        right_list.append(row[1])
 
-    return result
+    return sum(l * right_list.count(l) for l in left_list)
 
 
 # [values.year]            (number)  2024
@@ -23,4 +17,4 @@ async def run() -> int:
 # [values.part]            (number)  2
 # [values.input_filename]  (str)     ./year2024/day1/input
 #
-# Result:
+# Result: 19437052
