@@ -6,10 +6,8 @@ async def run() -> int:
     result = 0
 
     for levels in values.ints():
-        if levels != tuple(sorted(levels)) and levels != tuple(sorted(levels, reverse=True)):
-            continue
-
-        if all(1 <= abs(a - b) <= 3 for a, b in pairwise(sorted(levels))):
+        diffs = [b - a for a, b in pairwise(levels)]
+        if (max(diffs) < 0 and min(diffs) >= -3) or (min(diffs) > 0 and max(diffs) <= 3):
             result += 1
 
     return result
