@@ -1,21 +1,16 @@
-import functools
-import heapq
-import itertools
-import math
-import re
-from collections import Counter, deque
-from functools import cache, lru_cache, reduce
-from itertools import combinations, cycle, islice, permutations, product
-
-import helpers
+from helpers import pairwise
 from values import values
 
 
 async def run() -> int:
     result = 0
 
-    for row in values:
-        pass
+    for levels in values.ints():
+        if levels != tuple(sorted(levels)) and levels != tuple(sorted(levels, reverse=True)):
+            continue
+
+        if all(1 <= abs(a - b) <= 3 for a, b in pairwise(sorted(levels))):
+            result += 1
 
     return result
 
@@ -25,4 +20,4 @@ async def run() -> int:
 # [values.part]            (number)  1
 # [values.input_filename]  (str)     ./year2024/day2/input
 #
-# Result:
+# Result: 591
