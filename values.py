@@ -326,6 +326,9 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             return len(self.input)
         return len(self.rows)
 
+    def __repr__(self) -> str:
+        return repr(self.input)
+
     def __str__(self) -> str:
         return str(self.input)
 
@@ -602,10 +605,16 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
 
     def findall(
         self, pattern: str | re.Pattern[str], flags: re.RegexFlag | int = 0, flatten: bool = False
-    ) -> list[Any]:
+    ) -> list[tuple[ValuesSlice, ...]]:
         if flatten:
-            return re.findall(pattern, self.flatten().input, flags)
-        return re.findall(pattern, self.input, flags)
+            match_list = re.findall(pattern, self.flatten().input, flags)
+        else:
+            match_list = re.findall(pattern, self.input, flags)
+
+        result: list[tuple[ValuesSlice, ...]] = []
+        for match in match_list:
+            result.append(tuple([Values(value) for value in match]))
+        return result
 
     def search(
         self, pattern: str | re.Pattern[str], flags: re.RegexFlag | int = 0, flatten: bool = False
