@@ -599,6 +599,13 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             return re.finditer(pattern, self.flatten().input, flags)
         return re.finditer(pattern, self.input, flags)
 
+    def findall(
+        self, pattern: str | re.Pattern[str], flags: re.RegexFlag | int = 0, flatten: bool = False
+    ) -> list[Any]:
+        if flatten:
+            return re.findall(pattern, self.flatten().input, flags)
+        return re.findall(pattern, self.input, flags)
+
     def search(
         self, pattern: str | re.Pattern[str], flags: re.RegexFlag | int = 0, flatten: bool = False
     ) -> re.Match[str] | None:

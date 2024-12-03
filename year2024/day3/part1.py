@@ -4,9 +4,8 @@ from values import values
 async def run() -> int:
     result = 0
 
-    for match in values.finditer(r"mul[(](\d{1,3}),(\d{1,3})[)]"):
-        a, b = int(match.group(1)), int(match.group(2))
-        result += a * b
+    for a, b in values.findall(r"mul[(](\d{1,3}),(\d{1,3})[)]"):
+        result += int(a) * int(b)
 
     return result
 
