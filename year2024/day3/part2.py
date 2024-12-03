@@ -5,14 +5,13 @@ async def run() -> int:
     result = 0
 
     mul_enabled = True
-    for match in values.finditer(r"mul[(](\d{1,3}),(\d{1,3})[)]|do[(][)]|don't[(][)]"):
-        if match.group(0) == "do()":
+    for cmd, a, b in values.findall(r"(mul[(](\d{1,3}),(\d{1,3})[)]|do[(][)]|don't[(][)])"):
+        if cmd == "do()":
             mul_enabled = True
-        elif match.group(0) == "don't()":
+        elif cmd == "don't()":
             mul_enabled = False
         elif mul_enabled:
-            a, b = int(match.group(1)), int(match.group(2))
-            result += a * b
+            result += int(a) * int(b)
 
     return result
 
