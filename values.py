@@ -16,6 +16,7 @@ from typing import (
     Generic,
     Iterable,
     Iterator,
+    Literal,
     Optional,
     ParamSpec,
     Protocol,
@@ -612,6 +613,38 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         if flatten:
             return re.search(pattern, self.flatten().input, flags)
         return re.search(pattern, self.input, flags)
+
+    @overload
+    def sub(
+        self,
+        pattern: str | re.Pattern[str],
+        repl: str | Callable[[re.Match[str]], str],
+        count: int = 0,
+        flags: re.RegexFlag | int = 0,
+        flatten: Literal[False] = False,
+    ) -> ValuesSlice: ...
+
+    @overload
+    def sub(
+        self,
+        pattern: str | re.Pattern[str],
+        repl: str | Callable[[re.Match[str]], str],
+        count: int = 0,
+        flags: re.RegexFlag | int = 0,
+        flatten: Literal[True] = True,
+    ) -> ValuesRow: ...
+
+    def sub(
+        self,
+        pattern: str | re.Pattern[str],
+        repl: str | Callable[[re.Match[str]], str],
+        count: int = 0,
+        flags: re.RegexFlag | int = 0,
+        flatten: bool = False,
+    ) -> ValuesSlice | ValuesRow:
+        if flatten:
+            return Values(re.sub(pattern, repl, self.flatten().input, count=count, flags=flags)).flatten()
+        return Values(re.sub(pattern, repl, self.input, count=count, flags=flags))
 
     def flatten(self) -> ValuesRow:
         values = Values("".join(self.new().rows))
