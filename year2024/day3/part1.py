@@ -1,5 +1,3 @@
-import re
-
 from values import values
 
 
