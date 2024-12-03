@@ -6,10 +6,8 @@ from values import values
 async def run() -> int:
     result = 0
 
-    content = values.input.replace("\n", "")
     mul_enabled = True
-
-    for match in re.finditer(r"mul[(](\d+),(\d+)[)]|do[(][)]|don't[(][)]", content):
+    for match in re.finditer(r"mul[(](\d+),(\d+)[)]|do[(][)]|don't[(][)]", values.input.replace("\n", "")):
         if match.group(0) == "do()":
             mul_enabled = True
         elif match.group(0) == "don't()":
