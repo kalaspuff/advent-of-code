@@ -7,7 +7,7 @@ async def run() -> int:
     result = 0
 
     mul_enabled = True
-    for match in re.finditer(r"mul[(](\d+),(\d+)[)]|do[(][)]|don't[(][)]", values.input.replace("\n", "")):
+    for match in values.finditer(r"mul[(](\d+),(\d+)[)]|do[(][)]|don't[(][)]"):
         if match.group(0) == "do()":
             mul_enabled = True
         elif match.group(0) == "don't()":

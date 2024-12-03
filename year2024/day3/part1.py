@@ -6,7 +6,7 @@ from values import values
 async def run() -> int:
     result = 0
 
-    for match in re.finditer(r"mul[(](\d+),(\d+)[)]", values.input.replace("\n", "")):
+    for match in values.finditer(r"mul[(](\d+),(\d+)[)]"):
         a, b = int(match.group(1)), int(match.group(2))
         result += a * b
 

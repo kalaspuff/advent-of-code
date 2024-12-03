@@ -283,20 +283,16 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     #     return Values[type[T]]
 
     @overload
-    def __getitem__(self: ValuesSlice, value: slice) -> ValuesSlice:
-        ...
+    def __getitem__(self: ValuesSlice, value: slice) -> ValuesSlice: ...
 
     @overload
-    def __getitem__(self: ValuesSlice, value: int) -> ValuesRow:
-        ...
+    def __getitem__(self: ValuesSlice, value: int) -> ValuesRow: ...
 
     @overload
-    def __getitem__(self, value: int) -> ValuesIntT:
-        ...
+    def __getitem__(self, value: int) -> ValuesIntT: ...
 
     @overload
-    def __getitem__(self, value: slice) -> ValuesSliceT:
-        ...
+    def __getitem__(self, value: slice) -> ValuesSliceT: ...
 
     def __getitem__(self, value: slice | int) -> ValuesRow | ValuesSlice | ValuesIntT | ValuesSliceT:
         try:
@@ -472,12 +468,10 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         return self.transpose()
 
     @overload
-    def deque(self: ValuesSlice) -> deque[deque[str]]:
-        ...
+    def deque(self: ValuesSlice) -> deque[deque[str]]: ...
 
     @overload
-    def deque(self: ValuesRow) -> deque[str]:
-        ...
+    def deque(self: ValuesRow) -> deque[str]: ...
 
     def deque(self) -> deque[str] | deque[deque[str]]:
         if self._single_row or len(self.origin) == 1:
@@ -485,12 +479,10 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         return deque([deque(row) for row in self.new().rows])
 
     @overload
-    def ints(self: ValuesSlice) -> list[tuple[int, ...]]:
-        ...
+    def ints(self: ValuesSlice) -> list[tuple[int, ...]]: ...
 
     @overload
-    def ints(self: ValuesRow) -> tuple[int, ...]:
-        ...
+    def ints(self: ValuesRow) -> tuple[int, ...]: ...
 
     def ints(self) -> tuple[int, ...] | list[tuple[int, ...]]:
         if self._single_row or len(self.origin) == 1:
@@ -498,12 +490,10 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         return self.findall_ints()
 
     @overload
-    def alphanums(self: ValuesSlice) -> list[tuple[str, ...]]:
-        ...
+    def alphanums(self: ValuesSlice) -> list[tuple[str, ...]]: ...
 
     @overload
-    def alphanums(self: ValuesRow) -> tuple[str, ...]:
-        ...
+    def alphanums(self: ValuesRow) -> tuple[str, ...]: ...
 
     def alphanums(self) -> tuple[str, ...] | list[tuple[str, ...]]:
         if self._single_row or len(self.origin) == 1:
@@ -513,14 +503,12 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     @overload
     def words(
         self: ValuesSlice, words: tuple[str, ...] | list[str] | set[str] | Iterable[str] | None = None
-    ) -> list[tuple[str, ...]]:
-        ...
+    ) -> list[tuple[str, ...]]: ...
 
     @overload
     def words(
         self: ValuesRow, words: tuple[str, ...] | list[str] | set[str] | Iterable[str] | None = None
-    ) -> tuple[str, ...]:
-        ...
+    ) -> tuple[str, ...]: ...
 
     def words(
         self, words: tuple[str, ...] | list[str] | set[str] | Iterable[str] | None = None
@@ -531,12 +519,10 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         return self.findall_words(words)
 
     @overload
-    def digits(self: ValuesSlice) -> list[tuple[int, ...]]:
-        ...
+    def digits(self: ValuesSlice) -> list[tuple[int, ...]]: ...
 
     @overload
-    def digits(self: ValuesRow) -> tuple[int, ...]:
-        ...
+    def digits(self: ValuesRow) -> tuple[int, ...]: ...
 
     def digits(self) -> tuple[int, ...] | list[tuple[int, ...]]:
         if self._single_row or len(self.origin) == 1:
@@ -546,14 +532,12 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     @overload
     def split(
         self: ValuesSlice, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
-    ) -> list[tuple[str, ...]]:
-        ...
+    ) -> list[tuple[str, ...]]: ...
 
     @overload
     def split(
         self: ValuesRow, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
-    ) -> tuple[str, ...]:
-        ...
+    ) -> tuple[str, ...]: ...
 
     def split(
         self, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
@@ -565,14 +549,12 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     @overload
     def split_values(
         self: ValuesSlice, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
-    ) -> list[ValuesSlice]:
-        ...
+    ) -> list[ValuesSlice]: ...
 
     @overload
     def split_values(
         self: ValuesRow, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
-    ) -> ValuesSlice:
-        ...
+    ) -> ValuesSlice: ...
 
     def split_values(
         self, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
@@ -609,6 +591,20 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         self, sep: str | tuple[str, ...] | list[str] | set[str] = " ", maxsplit: int = -1
     ) -> list[ValuesSlice]:
         return [Values(rows.strip()) for rows in self.split_input(sep, maxsplit)]
+
+    def finditer(
+        self, pattern: str | re.Pattern[str], flags: re.RegexFlag | int = 0, flatten: bool = False
+    ) -> Iterator[re.Match[str]]:
+        if flatten:
+            return re.finditer(pattern, self.flatten().input, flags)
+        return re.finditer(pattern, self.input, flags)
+
+    def search(
+        self, pattern: str | re.Pattern[str], flags: re.RegexFlag | int = 0, flatten: bool = False
+    ) -> re.Match[str] | None:
+        if flatten:
+            return re.search(pattern, self.flatten().input, flags)
+        return re.search(pattern, self.input, flags)
 
     def flatten(self) -> ValuesRow:
         values = Values("".join(self.new().rows))
@@ -793,34 +789,31 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         return match_rows([self.input], regexp, transform=transform)[0]
 
     @overload
-    def match_rows(self, regexp: str, transform: tuple[Callable[..., T1]]) -> list[tuple[T1]]:
-        ...
+    def match_rows(self, regexp: str, transform: tuple[Callable[..., T1]]) -> list[tuple[T1]]: ...
 
     @overload
-    def match_rows(self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2]]) -> list[tuple[T1, T2]]:
-        ...
+    def match_rows(
+        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2]]
+    ) -> list[tuple[T1, T2]]: ...
 
     @overload
     def match_rows(
         self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3]]
-    ) -> list[tuple[T1, T2, T3]]:
-        ...
+    ) -> list[tuple[T1, T2, T3]]: ...
 
     @overload
     def match_rows(
         self,
         regexp: str,
         transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4]],
-    ) -> list[tuple[T1, T2, T3, T4]]:
-        ...
+    ) -> list[tuple[T1, T2, T3, T4]]: ...
 
     @overload
     def match_rows(
         self,
         regexp: str,
         transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4], Callable[..., T5]],
-    ) -> list[tuple[T1, T2, T3, T4, T5]]:
-        ...
+    ) -> list[tuple[T1, T2, T3, T4, T5]]: ...
 
     @overload
     def match_rows(
@@ -834,8 +827,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             Callable[..., T5],
             Callable[..., T6],
         ],
-    ) -> list[tuple[T1, T2, T3, T4, T5, T6]]:
-        ...
+    ) -> list[tuple[T1, T2, T3, T4, T5, T6]]: ...
 
     @overload
     def match_rows(
@@ -850,20 +842,16 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             Callable[..., T],
             *tuple[Callable[..., T], ...],
         ],
-    ) -> list[tuple[T, ...]]:
-        ...
+    ) -> list[tuple[T, ...]]: ...
 
     @overload
-    def match_rows(self, regexp: str, transform: Callable[..., T]) -> list[tuple[T, ...]]:
-        ...
+    def match_rows(self, regexp: str, transform: Callable[..., T]) -> list[tuple[T, ...]]: ...
 
     @overload
-    def match_rows(self, regexp: str, transform: list[Callable[..., T]]) -> list[tuple[T, ...]]:
-        ...
+    def match_rows(self, regexp: str, transform: list[Callable[..., T]]) -> list[tuple[T, ...]]: ...
 
     @overload
-    def match_rows(self, regexp: str, transform: None = None) -> list[tuple[Any, ...]]:
-        ...
+    def match_rows(self, regexp: str, transform: None = None) -> list[tuple[Any, ...]]: ...
 
     def match_rows(
         self,
@@ -896,34 +884,31 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
         return match_rows(self.new().rows, regexp, transform=transform_)
 
     @overload
-    def findall_rows(self, regexp: str, transform: tuple[Callable[..., T1]]) -> list[tuple[T1]]:
-        ...
+    def findall_rows(self, regexp: str, transform: tuple[Callable[..., T1]]) -> list[tuple[T1]]: ...
 
     @overload
-    def findall_rows(self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2]]) -> list[tuple[T1, T2]]:
-        ...
+    def findall_rows(
+        self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2]]
+    ) -> list[tuple[T1, T2]]: ...
 
     @overload
     def findall_rows(
         self, regexp: str, transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3]]
-    ) -> list[tuple[T1, T2, T3]]:
-        ...
+    ) -> list[tuple[T1, T2, T3]]: ...
 
     @overload
     def findall_rows(
         self,
         regexp: str,
         transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4]],
-    ) -> list[tuple[T1, T2, T3, T4]]:
-        ...
+    ) -> list[tuple[T1, T2, T3, T4]]: ...
 
     @overload
     def findall_rows(
         self,
         regexp: str,
         transform: tuple[Callable[..., T1], Callable[..., T2], Callable[..., T3], Callable[..., T4], Callable[..., T5]],
-    ) -> list[tuple[T1, T2, T3, T4, T5]]:
-        ...
+    ) -> list[tuple[T1, T2, T3, T4, T5]]: ...
 
     @overload
     def findall_rows(
@@ -937,8 +922,7 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             Callable[..., T5],
             Callable[..., T6],
         ],
-    ) -> list[tuple[T1, T2, T3, T4, T5, T6]]:
-        ...
+    ) -> list[tuple[T1, T2, T3, T4, T5, T6]]: ...
 
     @overload
     def findall_rows(
@@ -953,20 +937,16 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
             Callable[..., T],
             *tuple[Callable[..., T], ...],
         ],
-    ) -> list[tuple[T, ...]]:
-        ...
+    ) -> list[tuple[T, ...]]: ...
 
     @overload
-    def findall_rows(self, regexp: str, transform: Callable[..., T]) -> list[tuple[T, ...]]:
-        ...
+    def findall_rows(self, regexp: str, transform: Callable[..., T]) -> list[tuple[T, ...]]: ...
 
     @overload
-    def findall_rows(self, regexp: str, transform: list[Callable[..., T]]) -> list[tuple[T, ...]]:
-        ...
+    def findall_rows(self, regexp: str, transform: list[Callable[..., T]]) -> list[tuple[T, ...]]: ...
 
     @overload
-    def findall_rows(self, regexp: str, transform: None = None) -> list[tuple[Any, ...]]:
-        ...
+    def findall_rows(self, regexp: str, transform: None = None) -> list[tuple[Any, ...]]: ...
 
     def findall_rows(
         self,
