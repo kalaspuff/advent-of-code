@@ -3,8 +3,6 @@ import itertools
 from helpers import tuple_add
 from values import values
 
-DIRECTIONS = itertools.product([-1, 0, 1], [-1, 0, 1])
-
 
 async def run() -> int:
     result = 0
@@ -15,7 +13,7 @@ async def run() -> int:
     for letter in letters:
         positions[letter] = {pos for pos in values.matrix.pos(letter)}
 
-    for mod in DIRECTIONS:
+    for mod in itertools.product([-1, 0, 1], [-1, 0, 1]):
         for pos in positions[letters[0]]:
             pos_ = pos
             for letter in letters[1:]:
