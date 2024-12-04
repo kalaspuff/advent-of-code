@@ -335,6 +335,12 @@ class Values(Generic[ValuesIntT, ValuesSliceT]):
     def __int__(self) -> int:
         return int(self.input)
 
+    def str(self) -> str:
+        return str(self.input)
+
+    def int(self) -> int:
+        return int(self.input)
+
     def __iter__(self) -> Iterator[ValuesIntT]:
         iterator: Iterator[ValuesIntT] = cast(Iterator[ValuesIntT], self[self._index or 0 :])
         if isinstance(iterator, str):
