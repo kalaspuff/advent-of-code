@@ -1,24 +1,21 @@
 import itertools
 
-from helpers import tuple_add
+from helpers import tuple_sum
 from values import values
 
 
 async def run() -> int:
     result = 0
 
-    letters = "XMAS"
-    positions: dict[str, set[tuple[int, int]]] = {}
+    x_pos = set(values.matrix.pos("X"))
+    m_pos = set(values.matrix.pos("M"))
+    a_pos = set(values.matrix.pos("A"))
+    s_pos = set(values.matrix.pos("S"))
 
-    for letter in letters:
-        positions[letter] = {pos for pos in values.matrix.pos(letter)}
-
-    for mod in itertools.product([-1, 0, 1], [-1, 0, 1]):
-        for pos in positions[letters[0]]:
-            pos_ = pos
-            for letter in letters[1:]:
-                pos_ = tuple_add(pos_, mod)
-                if pos_ not in positions[letter]:
+    for pos in x_pos:
+        for mod in itertools.product([-1, 0, 1], [-1, 0, 1]):
+            for i, pos_ in enumerate((m_pos, a_pos, s_pos), 1):
+                if tuple_sum(pos, *((mod,) * i)) not in pos_:
                     break
             else:
                 result += 1
