@@ -7,14 +7,11 @@ from values import values
 async def run() -> int:
     result = 0
 
-    x_pos = set(values.matrix.pos("X"))
-    m_pos = set(values.matrix.pos("M"))
-    a_pos = set(values.matrix.pos("A"))
-    s_pos = set(values.matrix.pos("S"))
+    letter_positions = [set(values.matrix.pos(c)) for c in "XMAS"]
 
-    for pos in x_pos:
+    for pos in letter_positions[0]:
         for mod in itertools.product([-1, 0, 1], [-1, 0, 1]):
-            for i, pos_ in enumerate((m_pos, a_pos, s_pos), 1):
+            for i, pos_ in enumerate(letter_positions[1:], 1):
                 if tuple_sum(pos, *((mod,) * i)) not in pos_:
                     break
             else:
