@@ -1,36 +1,24 @@
 import itertools
 
-from helpers import tuple_add
+from helpers import tuple_add, tuple_sub
 from values import values
-
-DIRECTIONS = itertools.product([-1, 1], [-1, 1])
 
 
 async def run() -> int:
     result = 0
 
-    letters = "MAS"
-    positions: dict[str, set[tuple[int, int]]] = {}
-    x_mas_positions: list[tuple[int, int]] = []
+    m_pos = set(values.matrix.pos("M"))
+    a_pos = set(values.matrix.pos("A"))
+    s_pos = set(values.matrix.pos("S"))
 
-    for letter in letters:
-        positions[letter] = {pos for pos in values.matrix.pos(letter)}
+    for pos in a_pos:
+        matches = 0
 
-    for mod in DIRECTIONS:
-        for pos in positions[letters[0]]:
-            pos_ = pos
-            x_mas_position: tuple[int, int]
-            for letter in letters[1:]:
-                pos_ = tuple_add(pos_, mod)
-                if letter == "A":
-                    x_mas_position = pos_
-                if pos_ not in positions[letter]:
-                    break
-            else:
-                x_mas_positions.append(x_mas_position)
+        for mod in itertools.product([-1, 1], [-1, 1]):
+            if tuple_add(pos, mod) in m_pos and tuple_sub(pos, mod) in s_pos:
+                matches += 1
 
-    for pos in set(x_mas_positions):
-        if x_mas_positions.count(pos) > 1:
+        if matches == 2:
             result += 1
 
     return result
