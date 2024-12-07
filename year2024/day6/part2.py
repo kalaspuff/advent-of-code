@@ -4,52 +4,43 @@ from helpers import tuple_add
 from values import values
 
 
-async def run() -> int:
-    start_pos = cast(tuple[int, int], values.matrix.pos_first("^"))
-    obstructions = set(values.matrix.pos("#"))
-    coordinates = values.matrix.coordinates.keys()
+class LoopDetectedError(Exception):
+    pass
 
-    pos = start_pos
-    direction: tuple[int, int] = (0, -1)
-    simulated_positions = set()
 
-    while True:
-        next_pos = tuple_add(pos, direction)
+def simulate_path(
+    pos: tuple[int, int], obstructions: set[tuple[int, int]], coordinates: set[tuple[int, int]]
+) -> tuple[tuple[int, int], ...]:
+    direction = (0, -1)
+    visited: set[tuple[tuple[int, int], tuple[int, int]]] = {(pos, direction)}
 
-        if next_pos not in coordinates:
-            break
-
+    while (next_pos := tuple_add(pos, direction)) in coordinates:
         if next_pos in obstructions:
             direction = (-direction[1], direction[0])
+        elif (next_pos, direction) in visited:
+            raise LoopDetectedError
         else:
             pos = next_pos
-            simulated_positions.add(pos)
+            visited.add((pos, direction))
 
-    potential_obstructions = set()
+    return tuple(p for p, _ in visited)
 
-    for obstruction_pos in simulated_positions:
-        pos = start_pos
-        direction = (0, -1)
-        visited_dirs: set[tuple[tuple[int, int], tuple[int, int]]] = {(pos, direction)}
-        obstructions_ = obstructions | {obstruction_pos}
 
-        while True:
-            next_pos = tuple_add(pos, direction)
+async def run() -> int:
+    result = 0
 
-            if next_pos not in coordinates:
-                break
+    start_pos = cast(tuple[int, int], values.matrix.pos_first("^"))
+    obstructions = set(values.matrix.pos("#"))
+    coordinates = set(values.matrix.coordinates.keys())
+    path_positions = set(simulate_path(start_pos, obstructions, coordinates))
 
-            if next_pos in obstructions_:
-                direction = (-direction[1], direction[0])
-            else:
-                if (next_pos, direction) in visited_dirs:
-                    potential_obstructions.add(obstruction_pos)
-                    break
+    for obstruction_pos in path_positions:
+        try:
+            simulate_path(start_pos, obstructions | {obstruction_pos}, coordinates)
+        except LoopDetectedError:
+            result += 1
 
-                pos = next_pos
-                visited_dirs.add((pos, direction))
-
-    return len(potential_obstructions)
+    return result
 
 
 # [values.year]            (number)  2024

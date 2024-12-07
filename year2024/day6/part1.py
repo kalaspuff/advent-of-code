@@ -10,12 +10,7 @@ async def run() -> int:
     direction = (0, -1)
     visited = {pos}
 
-    while True:
-        next_pos = tuple_add(pos, direction)
-
-        if next_pos not in coordinates:
-            break
-
+    while (next_pos := tuple_add(pos, direction)) in coordinates:
         if next_pos in obstructions:
             direction = (-direction[1], direction[0])
         else:
