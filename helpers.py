@@ -1781,3 +1781,6 @@ class HeapQueue(Generic[HeapQueueT]):
 
     def clear(self) -> None:
         self.queue.clear()
+
+    def __hash__(self) -> int:
+        return hash(("HeapQueue", tuple(self.queue)))
