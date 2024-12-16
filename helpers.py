@@ -1,7 +1,9 @@
 # note: code may have been written in a rush, here be dragons and lots of bad patterns to avoid.
 from __future__ import annotations
 
+import copy
 import functools
+import heapq
 import itertools
 import math
 import re
@@ -239,18 +241,15 @@ def int_rows(value: Sequence) -> list[int]:
 
 
 @overload
-def tuple_sum(*values: tuple[int, int]) -> tuple[int, int]:
-    ...
+def tuple_sum(*values: tuple[int, int]) -> tuple[int, int]: ...
 
 
 @overload
-def tuple_sum(*values: tuple[int, ...]) -> tuple[int, ...]:
-    ...
+def tuple_sum(*values: tuple[int, ...]) -> tuple[int, ...]: ...
 
 
 @overload
-def tuple_sum(*values: T) -> T:
-    ...
+def tuple_sum(*values: T) -> T: ...
 
 
 def tuple_sum(*values: T) -> T:
@@ -271,18 +270,15 @@ def _tuple_sum(*values: T) -> T:
 
 
 @overload
-def tuple_negative(value: tuple[int, int]) -> tuple[int, int]:
-    ...
+def tuple_negative(value: tuple[int, int]) -> tuple[int, int]: ...
 
 
 @overload
-def tuple_negative(value: tuple[int, ...]) -> tuple[int, ...]:
-    ...
+def tuple_negative(value: tuple[int, ...]) -> tuple[int, ...]: ...
 
 
 @overload
-def tuple_negative(value: T) -> T:
-    ...
+def tuple_negative(value: T) -> T: ...
 
 
 def tuple_negative(value: T) -> T:
@@ -295,18 +291,15 @@ def _tuple_negative(value: T) -> T:
 
 
 @overload
-def tuple_add(value: tuple[int, int], mod: tuple[int, int]) -> tuple[int, int]:
-    ...
+def tuple_add(value: tuple[int, int], mod: tuple[int, int]) -> tuple[int, int]: ...
 
 
 @overload
-def tuple_add(value: tuple[int, ...], mod: tuple[int, ...]) -> tuple[int, ...]:
-    ...
+def tuple_add(value: tuple[int, ...], mod: tuple[int, ...]) -> tuple[int, ...]: ...
 
 
 @overload
-def tuple_add(value: T, mod: T) -> T:
-    ...
+def tuple_add(value: T, mod: T) -> T: ...
 
 
 def tuple_add(value: T, mod: T) -> T:
@@ -314,18 +307,15 @@ def tuple_add(value: T, mod: T) -> T:
 
 
 @overload
-def tuple_sub(value: tuple[int, int], mod: tuple[int, int]) -> tuple[int, int]:
-    ...
+def tuple_sub(value: tuple[int, int], mod: tuple[int, int]) -> tuple[int, int]: ...
 
 
 @overload
-def tuple_sub(value: tuple[int, ...], mod: tuple[int, ...]) -> tuple[int, ...]:
-    ...
+def tuple_sub(value: tuple[int, ...], mod: tuple[int, ...]) -> tuple[int, ...]: ...
 
 
 @overload
-def tuple_sub(value: T, mod: T) -> T:
-    ...
+def tuple_sub(value: T, mod: T) -> T: ...
 
 
 def tuple_sub(value: T, mod: T) -> T:
@@ -584,32 +574,28 @@ def transform_dict(
 def transform_tuple(
     value,
     transform: Callable[..., T],
-) -> tuple[T, ...]:
-    ...
+) -> tuple[T, ...]: ...
 
 
 @overload
 def transform_tuple(
     value,
     transform: tuple[Callable[..., T1]],
-) -> tuple[T1]:
-    ...
+) -> tuple[T1]: ...
 
 
 @overload
 def transform_tuple(
     value,
     transform: tuple[Callable[..., T1], Callable[..., T2]],
-) -> tuple[T1, T2]:
-    ...
+) -> tuple[T1, T2]: ...
 
 
 @overload
 def transform_tuple(
     value,
     transform: tuple[Callable[..., T], ...],
-) -> tuple[T, ...]:
-    ...
+) -> tuple[T, ...]: ...
 
 
 @overload
@@ -621,8 +607,7 @@ def transform_tuple(
         map,
     ],
     transform: Optional[Union[tuple, list[Any], Callable[..., Any]]] = None,
-) -> tuple:
-    ...
+) -> tuple: ...
 
 
 def transform_tuple(
@@ -844,23 +829,19 @@ def batched(
 
 
 @overload
-def paired(iterable: tuple[T1, T2]) -> list[tuple[T1, T2]]:
-    ...
+def paired(iterable: tuple[T1, T2]) -> list[tuple[T1, T2]]: ...
 
 
 @overload
-def paired(iterable: tuple[T1, T2, T1, T2]) -> list[tuple[T1, T2]]:
-    ...
+def paired(iterable: tuple[T1, T2, T1, T2]) -> list[tuple[T1, T2]]: ...
 
 
 @overload
-def paired(iterable: tuple[T1, T2, T1, T2, T1, T2]) -> list[tuple[T1, T2]]:
-    ...
+def paired(iterable: tuple[T1, T2, T1, T2, T1, T2]) -> list[tuple[T1, T2]]: ...
 
 
 @overload
-def paired(iterable: Iterable[T] | tuple[T, ...]) -> list[tuple[T, T]]:
-    ...
+def paired(iterable: Iterable[T] | tuple[T, ...]) -> list[tuple[T, T]]: ...
 
 
 def paired(iterable: Iterable[Any] | tuple[Any, ...]) -> list[tuple[Any, Any]]:
@@ -909,12 +890,10 @@ class UnpackAnyFalsy(tuple_base[Unpack[Ts]]):
         return self._values.__repr__()
 
     @overload
-    def __getitem__(self, index: int) -> Union[Unpack[Ts]]:
-        ...
+    def __getitem__(self, index: int) -> Union[Unpack[Ts]]: ...
 
     @overload
-    def __getitem__(self, index: slice) -> Union[Unpack[Ts]] | tuple[Unpack[Ts]]:
-        ...
+    def __getitem__(self, index: slice) -> Union[Unpack[Ts]] | tuple[Unpack[Ts]]: ...
 
     def __getitem__(self, index: int | slice) -> Union[Unpack[Ts]] | tuple[Unpack[Ts]]:
         print("GETITEM", self, index)
@@ -1164,12 +1143,10 @@ class Range:
         return iter(self._range)
 
     @overload
-    def __contains__(self, value: int | float) -> bool:
-        ...
+    def __contains__(self, value: int | float) -> bool: ...
 
     @overload
-    def __contains__(self, value: str | None) -> Literal[False]:
-        ...
+    def __contains__(self, value: str | None) -> Literal[False]: ...
 
     def __contains__(self, value: object) -> bool:
         if isinstance(value, float) and not isinstance(value, int) and value.is_integer():
@@ -1179,12 +1156,10 @@ class Range:
         return bool(self.count(value))
 
     @overload
-    def __getitem__(self, idx: int) -> int:
-        ...
+    def __getitem__(self, idx: int) -> int: ...
 
     @overload
-    def __getitem__(self, idx: slice) -> Range:
-        ...
+    def __getitem__(self, idx: slice) -> Range: ...
 
     def __getitem__(self, idx: int | slice) -> int | Range:
         if isinstance(idx, int):
@@ -1557,12 +1532,10 @@ class Ranges:
         return any(value in r for r in self.ranges)
 
     @overload
-    def __getitem__(self, idx: int) -> int:
-        ...
+    def __getitem__(self, idx: int) -> int: ...
 
     @overload
-    def __getitem__(self, idx: slice) -> Ranges | Range:
-        ...
+    def __getitem__(self, idx: slice) -> Ranges | Range: ...
 
     def __getitem__(self, idx: int | slice) -> int | Ranges | Range:
         if isinstance(idx, int):
@@ -1698,3 +1671,114 @@ class Ranges:
     def split(self, value: int) -> tuple[Range | Ranges, Range | Ranges]:
         idx = self.index_near(value)
         return self[:idx], self[idx:]
+
+
+HeapQueueT = TypeVar("HeapQueueT", bound=tuple[Any, ...], default=tuple[Any, ...])
+
+
+class HeapQueue(Generic[HeapQueueT]):
+    def __init__(self, values: HeapQueueT | None = None) -> None:
+        self.queue: list[HeapQueueT] = []
+        if values is not None and len(values):
+            heapq.heappush(self.queue, values)
+
+    def append(self, value: HeapQueueT) -> None:
+        heapq.heappush(self.queue, value)
+
+    def push(self, value: HeapQueueT) -> None:
+        self.append(value)
+
+    def heappush(self, value: HeapQueueT) -> None:
+        self.append(value)
+
+    def remove(self, value: HeapQueueT) -> None:
+        self.queue.remove(value)
+
+    def extend(self, values: Iterable[HeapQueueT]) -> None:
+        for value in values:
+            self.append(value)
+
+    def pop(self, default: HeapQueueT | None = None) -> HeapQueueT:
+        if default is not None and not self.queue:
+            return cast(HeapQueueT, default)
+        return heapq.heappop(self.queue)
+
+    def heappop(self, value: HeapQueueT) -> None:
+        self.pop()
+
+    @property
+    def current(self) -> HeapQueueT:
+        return self.queue[0]
+
+    @property
+    def first(self) -> HeapQueueT:
+        return self.queue[0]
+
+    @property
+    def last(self) -> HeapQueueT:
+        return self.queue[-1]
+
+    @property
+    def length(self) -> int:
+        return len(self)
+
+    @overload
+    def __getitem__(self, idx: int) -> HeapQueueT: ...
+
+    @overload
+    def __getitem__(self, idx: slice) -> list[HeapQueueT]: ...
+
+    def __getitem__(self, idx: int | slice) -> HeapQueueT | list[HeapQueueT]:
+        # heapq.heapify(self.queue)
+        return self.queue[idx]
+
+    def get(self, idx: int) -> HeapQueueT:
+        return self.queue[idx]
+
+    def nsmallest(self, n: int, key: Callable[[HeapQueueT], Any] | None = None) -> list[HeapQueueT]:
+        return heapq.nsmallest(n, self.queue, key=key)
+
+    def nlargest(self, n: int, key: Callable[[HeapQueueT], Any] | None = None) -> list[HeapQueueT]:
+        return heapq.nlargest(n, self.queue, key=key)
+
+    def __len__(self) -> int:
+        return len(self.queue)
+
+    def count(self, value: HeapQueueT) -> int:
+        return self.queue.count(value)
+
+    def index(self, value: HeapQueueT, start: int = 0, stop: int | None = None) -> int:
+        if stop is None:
+            return self.queue.index(value, start)
+        return self.queue.index(value, start, stop)
+
+    def __contains__(self, value: HeapQueueT) -> bool:
+        return value in self.queue
+
+    def __bool__(self) -> bool:
+        return bool(self.queue)
+
+    def __iter__(self) -> Iterator[HeapQueueT]:
+        return iter(self.queue)
+
+    def __repr__(self) -> str:
+        return f"HeapQueue({self.queue})"
+
+    def __str__(self) -> str:
+        return f"HeapQueue({self.queue})"
+
+    def __copy__(self) -> HeapQueue[HeapQueueT]:
+        queue: HeapQueue[HeapQueueT] = HeapQueue()
+        queue.queue = self.queue[:]
+        return queue
+
+    def __deepcopy__(self, memo: dict | None) -> HeapQueue[HeapQueueT]:
+        queue: HeapQueue[HeapQueueT] = HeapQueue()
+        queue.queue = copy.deepcopy(self.queue)
+        return queue
+
+    def copy(self) -> HeapQueue[HeapQueueT]:
+        return self.__copy__()
+
+    def clear(self) -> None:
+        self.queue.clear()
