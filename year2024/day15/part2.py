@@ -44,6 +44,22 @@ def try_move(
     return True
 
 
+def print_warehouse(
+    warehouse: Matrix,
+    boxes: set[tuple[int, int]],
+    walls: set[tuple[int, int]],
+    robot: tuple[int, int],
+) -> None:
+    matrix = Matrix(height=warehouse.height, width=warehouse.width, fill=".")
+    for pos in boxes:
+        matrix[pos] = "["
+        matrix[tuple_add(pos, (1, 0))] = "]"
+    for pos in walls:
+        matrix[pos] = "#"
+    matrix[robot] = "@"
+    print(matrix)
+
+
 async def run() -> int:
     result = 0
 
@@ -90,6 +106,8 @@ async def run() -> int:
 
     for x, y in boxes:
         result += x + y * 100
+
+    print_warehouse(warehouse, boxes, walls, robot)
 
     return result
 
