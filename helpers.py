@@ -1729,7 +1729,6 @@ class HeapQueue(Generic[HeapQueueT]):
     def __getitem__(self, idx: slice) -> list[HeapQueueT]: ...
 
     def __getitem__(self, idx: int | slice) -> HeapQueueT | list[HeapQueueT]:
-        # heapq.heapify(self.queue)
         return self.queue[idx]
 
     def get(self, idx: int) -> HeapQueueT:
