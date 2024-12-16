@@ -1688,12 +1688,19 @@ class HeapQueue(Generic[HeapQueueT]):
     def push(self, value: HeapQueueT) -> None:
         self.append(value)
 
+    def add(self, value: HeapQueueT) -> None:
+        if value not in self.queue:
+            self.append(value)
+
     def heappush(self, value: HeapQueueT) -> None:
         self.append(value)
 
     def remove(self, value: HeapQueueT) -> None:
         self.queue.remove(value)
-        heapq.heapify(self.queue)
+
+    def remove_all(self, value: HeapQueueT) -> None:
+        while value in self.queue:
+            self.queue.remove(value)
 
     def extend(self, values: Iterable[HeapQueueT]) -> None:
         for value in values:
@@ -1802,3 +1809,43 @@ class HeapQueue(Generic[HeapQueueT]):
             return self.queue == other
         other.queue = sorted(other.queue)
         return self.queue == other.queue
+
+    def __add__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+        queue = self.copy()
+        queue.extend(other)
+        return queue
+
+    def __radd__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+        return self.__add__(other)
+
+    def __sub__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+        queue = self.copy()
+        for value in other:
+            if value in queue:
+                queue.remove(value)
+        return queue
+
+    def __and__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+        queue: HeapQueue[HeapQueueT] = HeapQueue()
+        for value in set(other):
+            if value in self.queue:
+                queue.append(value)
+        return queue
+
+    def __rand__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+        return self.__and__(other)
+
+    def __or__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+        queue: HeapQueue[HeapQueueT] = HeapQueue()
+        for value in set(other) | set(self.queue):
+            queue.append(value)
+        return queue
+
+    def __ror__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+        return self.__or__(other)
+
+    def distinct(self) -> HeapQueue[HeapQueueT]:
+        queue: HeapQueue[HeapQueueT] = HeapQueue()
+        for value in set(self.queue):
+            queue.append(value)
+        return queue
