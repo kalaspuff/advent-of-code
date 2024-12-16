@@ -1,6 +1,4 @@
-import heapq
-
-from helpers import tuple_add
+from helpers import HeapQueue, tuple_add
 from values import values
 
 
@@ -10,13 +8,13 @@ async def run() -> int:
     valid_positions = set(values.matrix.pos(".")) | {start, end}
     initial_direction = (1, 0)
 
-    queue: list[tuple[int, tuple[int, int], tuple[int, int]]] = [(0, start, initial_direction)]
+    queue: HeapQueue[tuple[int, tuple[int, int], tuple[int, int]]] = HeapQueue((0, start, initial_direction))
     dist = {}
     dist[(start, initial_direction)] = 0
     predecessors = {}
 
     while queue:
-        cost, pos, direction = heapq.heappop(queue)
+        cost, pos, direction = queue.pop()
 
         if pos == end:
             result = cost
@@ -29,7 +27,7 @@ async def run() -> int:
             if (next_pos, direction) not in dist or next_cost < dist[(next_pos, direction)]:
                 dist[(next_pos, direction)] = next_cost
                 predecessors[(next_pos, direction)] = [(pos, direction)]
-                heapq.heappush(queue, (next_cost, next_pos, direction))
+                queue.append((next_cost, next_pos, direction))
             elif next_pos in valid_positions and next_cost == dist.get((next_pos, direction), float("inf")):
                 predecessors[(next_pos, direction)].append((pos, direction))
 
@@ -41,7 +39,7 @@ async def run() -> int:
             if (pos, new_dir) not in dist or rotate_cost < dist[(pos, new_dir)]:
                 dist[(pos, new_dir)] = rotate_cost
                 predecessors[(pos, new_dir)] = [(pos, direction)]
-                heapq.heappush(queue, (rotate_cost, pos, new_dir))
+                queue.append((rotate_cost, pos, new_dir))
             elif rotate_cost == dist.get((pos, new_dir), float("inf")):
                 predecessors[(pos, new_dir)].append((pos, direction))
 

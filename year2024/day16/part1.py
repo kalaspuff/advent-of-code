@@ -1,6 +1,4 @@
-import heapq
-
-from helpers import tuple_add
+from helpers import HeapQueue, tuple_add
 from values import values
 
 
@@ -12,11 +10,11 @@ async def run() -> int:
     valid_positions = set(values.matrix.pos(".")) | {start, end}
     initial_direction = (1, 0)
 
-    queue: list[tuple[int, tuple[int, int], tuple[int, int]]] = [(0, start, initial_direction)]
+    queue: HeapQueue[tuple[int, tuple[int, int], tuple[int, int]]] = HeapQueue((0, start, initial_direction))
     visited = set()
 
     while queue:
-        cost, pos, direction = heapq.heappop(queue)
+        cost, pos, direction = queue.pop()
 
         if pos == end:
             result = cost
@@ -30,13 +28,13 @@ async def run() -> int:
 
         next_pos = tuple_add(pos, direction)
         if next_pos in valid_positions:
-            heapq.heappush(queue, (cost + 1, next_pos, direction))
+            queue.append((cost + 1, next_pos, direction))
 
         for new_dir in [
             (-direction[1], direction[0]),
             (direction[1], -direction[0]),
         ]:
-            heapq.heappush(queue, (cost + 1000, pos, new_dir))
+            queue.append((cost + 1000, pos, new_dir))
 
     return result
 
