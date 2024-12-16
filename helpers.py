@@ -1693,6 +1693,7 @@ class HeapQueue(Generic[HeapQueueT]):
 
     def remove(self, value: HeapQueueT) -> None:
         self.queue.remove(value)
+        heapq.heapify(self.queue)
 
     def extend(self, values: Iterable[HeapQueueT]) -> None:
         for value in values:
@@ -1716,7 +1717,7 @@ class HeapQueue(Generic[HeapQueueT]):
 
     @property
     def last(self) -> HeapQueueT:
-        return self.queue[-1]
+        return self[-1]
 
     @property
     def length(self) -> int:
@@ -1729,6 +1730,9 @@ class HeapQueue(Generic[HeapQueueT]):
     def __getitem__(self, idx: slice) -> list[HeapQueueT]: ...
 
     def __getitem__(self, idx: int | slice) -> HeapQueueT | list[HeapQueueT]:
+        if idx == 0:
+            return self.queue[0]
+        self.queue = sorted(self.queue)
         return self.queue[idx]
 
     def get(self, idx: int) -> HeapQueueT:
@@ -1747,6 +1751,7 @@ class HeapQueue(Generic[HeapQueueT]):
         return self.queue.count(value)
 
     def index(self, value: HeapQueueT, start: int = 0, stop: int | None = None) -> int:
+        self.queue = sorted(self.queue)
         if stop is None:
             return self.queue.index(value, start)
         return self.queue.index(value, start, stop)
@@ -1758,12 +1763,15 @@ class HeapQueue(Generic[HeapQueueT]):
         return bool(self.queue)
 
     def __iter__(self) -> Iterator[HeapQueueT]:
+        self.queue = sorted(self.queue)
         return iter(self.queue)
 
     def __repr__(self) -> str:
+        self.queue = sorted(self.queue)
         return f"HeapQueue({self.queue})"
 
     def __str__(self) -> str:
+        self.queue = sorted(self.queue)
         return f"HeapQueue({self.queue})"
 
     def __copy__(self) -> HeapQueue[HeapQueueT]:
@@ -1783,4 +1791,14 @@ class HeapQueue(Generic[HeapQueueT]):
         self.queue.clear()
 
     def __hash__(self) -> int:
+        self.queue = sorted(self.queue)
         return hash(("HeapQueue", tuple(self.queue)))
+
+    def __eq__(self, other: object) -> bool:
+        if self is other:
+            return True
+        self.queue = sorted(self.queue)
+        if not isinstance(other, HeapQueue):
+            return self.queue == other
+        other.queue = sorted(other.queue)
+        return self.queue == other.queue
