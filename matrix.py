@@ -199,6 +199,13 @@ class Matrix:
     def max_y(self) -> int:
         return (self.height - 1) if self.rows else 0
 
+    def in_bounds(self, x: int | tuple[int, int], y: int | None = None) -> bool:
+        if isinstance(x, tuple):
+            x, y = x
+        if y is None:
+            raise ValueError("y is required when x is a tuple")
+        return 0 <= x < self.width and 0 <= y < self.height
+
     def pad(
         self,
         size: Optional[int] = None,
