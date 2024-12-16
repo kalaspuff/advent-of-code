@@ -3,19 +3,12 @@ from matrix import Matrix
 from values import values
 
 
-def get_box_right(pos: tuple[int, int]) -> tuple[int, int]:
-    return tuple_add(pos, (1, 0))
-
-
-def get_box_left(pos: tuple[int, int]) -> tuple[int, int]:
-    return tuple_add(pos, (-1, 0))
-
-
 def get_box(pos: tuple[int, int], boxes: set[tuple[int, int]]) -> tuple[int, int] | None:
     if pos in boxes:
         return pos
-    if get_box_left(pos) in boxes:
-        return get_box_left(pos)
+    box_left = tuple_add(pos, (-1, 0))
+    if box_left in boxes:
+        return box_left
     return None
 
 
@@ -29,7 +22,7 @@ def try_move(
     if box_ is None:
         return False
 
-    box_right = get_box_right(box_)
+    box_right = tuple_add(box_, (1, 0))
 
     if tuple_add(box_, direction) in walls or tuple_add(box_right, direction) in walls:
         return False
@@ -84,20 +77,16 @@ async def run() -> int:
         if pos in walls:
             continue
 
-        box_positions = boxes | {get_box_right(box) for box in boxes}
+        box_positions = boxes | {tuple_add(box, (1, 0)) for box in boxes}
 
         if pos not in box_positions:
             robot = pos
             continue
 
-        original_boxes = boxes.copy()
-
-        if try_move(pos, direction, boxes, walls):
+        boxes_ = boxes.copy()
+        if try_move(pos, direction, boxes_, walls):
             robot = pos
-            continue
-        else:
-            boxes.clear()
-            boxes.update(original_boxes)
+            boxes = boxes_
 
     for x, y in boxes:
         result += x + y * 100

@@ -1,9 +1,7 @@
 from values import values
 
-memo: dict[tuple[int, int], int] = {}
 
-
-def stone_count(stone: int, steps: int) -> int:
+def stone_count(stone: int, steps: int, memo: dict[tuple[int, int], int]) -> int:
     if steps == 0:
         return 1
 
@@ -12,13 +10,13 @@ def stone_count(stone: int, steps: int) -> int:
         return memo[key]
 
     if stone == 0:
-        result = stone_count(1, steps - 1)
+        result = stone_count(1, steps - 1, memo)
     elif len(str(stone)) % 2 == 0:
-        left_part = stone_count(int(str(stone)[: len(str(stone)) // 2]), steps - 1)
-        right_part = stone_count(int(str(stone)[len(str(stone)) // 2 :]), steps - 1)
+        left_part = stone_count(int(str(stone)[: len(str(stone)) // 2]), steps - 1, memo)
+        right_part = stone_count(int(str(stone)[len(str(stone)) // 2 :]), steps - 1, memo)
         result = left_part + right_part
     else:
-        result = stone_count(stone * 2024, steps - 1)
+        result = stone_count(stone * 2024, steps - 1, memo)
 
     memo[key] = result
     return result
@@ -27,7 +25,7 @@ def stone_count(stone: int, steps: int) -> int:
 async def run() -> int:
     stones = list(values[0].ints())
 
-    return sum(stone_count(stone, 75) for stone in stones)
+    return sum(stone_count(stone, 75, {}) for stone in stones)
 
 
 # [values.year]            (number)  2024

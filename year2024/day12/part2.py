@@ -41,6 +41,7 @@ async def run() -> int:
         right_sides = set()
         top_sides = set()
         bottom_sides = set()
+
         for pos_ in positions_with_sides:
             neighbour = tuple_add(pos_, (-1, 0))
             if neighbour in boundary:

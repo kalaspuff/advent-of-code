@@ -10,9 +10,9 @@ async def run() -> int:
     start = values.matrix.pos("S")[0]
     end = values.matrix.pos("E")[0]
     valid_positions = set(values.matrix.pos(".")) | {start, end}
-
     initial_direction = (1, 0)
-    queue = [(0, start, initial_direction)]
+
+    queue: list[tuple[int, tuple[int, int], tuple[int, int]]] = [(0, start, initial_direction)]
     visited = set()
 
     while queue:

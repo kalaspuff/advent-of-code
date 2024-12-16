@@ -1,3 +1,5 @@
+from typing import cast
+
 from values import values
 
 
@@ -9,25 +11,21 @@ async def run() -> int:
         height = 7
 
     robots = []
-    for initial_x, initial_y, velocity_x, velocity_y in values.ints():
+    for initial_x, initial_y, velocity_x, velocity_y in cast(list[tuple[int, int, int, int]], values.ints()):
         x = initial_x
         y = initial_y
 
         for _ in range(100):
-            x += velocity_x
-            y += velocity_y
-            if x >= width:
-                x = x - width
+            x = (x + velocity_x) % width
+            y = (y + velocity_y) % height
             if x < 0:
                 x = x + width
-            if y >= height:
-                y = y - height
             if y < 0:
                 y = y + height
 
         robots.append((x, y))
 
-    quadrants = [[] for _ in range(4)]
+    quadrants: list[list[tuple[int, int]]] = [[] for _ in range(4)]
     for x, y in robots:
         if x == width // 2 or y == height // 2:
             continue
