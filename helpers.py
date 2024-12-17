@@ -1673,57 +1673,63 @@ class Ranges:
         return self[:idx], self[idx:]
 
 
-HeapQueueT = TypeVar("HeapQueueT", bound=tuple[Any, ...], default=tuple[Any, ...])
+HeapQueueTs = TypeVarTuple("HeapQueueTs")
 
 
-class HeapQueue(Generic[HeapQueueT]):
-    def __init__(self, values: HeapQueueT | None = None) -> None:
-        self.queue: list[HeapQueueT] = []
+class HeapQueue(Generic[*HeapQueueTs]):
+    @overload
+    def __init__(self: HeapQueue[*tuple[Any, ...]]) -> None: ...
+
+    @overload
+    def __init__(self, *values: *HeapQueueTs) -> None: ...
+
+    def __init__(self, *values: *HeapQueueTs) -> None:
+        self.queue: list[tuple[*HeapQueueTs]] = []
         if values is not None and len(values):
             heapq.heappush(self.queue, values)
 
-    def append(self, value: HeapQueueT) -> None:
-        heapq.heappush(self.queue, value)
+    def append(self, *values: *HeapQueueTs) -> None:
+        heapq.heappush(self.queue, values)
 
-    def push(self, value: HeapQueueT) -> None:
-        self.append(value)
+    def push(self, *values: *HeapQueueTs) -> None:
+        self.append(*values)
 
-    def add(self, value: HeapQueueT) -> None:
-        if value not in self.queue:
-            self.append(value)
+    def add(self, *values: *HeapQueueTs) -> None:
+        if values not in self.queue:
+            self.append(values)
 
-    def heappush(self, value: HeapQueueT) -> None:
-        self.append(value)
+    def heappush(self, *values: *HeapQueueTs) -> None:
+        self.append(*values)
 
-    def remove(self, value: HeapQueueT) -> None:
-        self.queue.remove(value)
+    def remove(self, *values: *HeapQueueTs) -> None:
+        self.queue.remove(values)
 
-    def remove_all(self, value: HeapQueueT) -> None:
-        while value in self.queue:
-            self.queue.remove(value)
+    def remove_all(self, *values: *HeapQueueTs) -> None:
+        while values in self.queue:
+            self.queue.remove(values)
 
-    def extend(self, values: Iterable[HeapQueueT]) -> None:
+    def extend(self, values: Iterable[tuple[*HeapQueueTs]]) -> None:
         for value in values:
-            self.append(value)
+            self.append(*value)
 
-    def pop(self, default: HeapQueueT | None = None) -> HeapQueueT:
+    def pop(self, default: tuple[*HeapQueueTs] | None = None) -> tuple[*HeapQueueTs]:
         if default is not None and not self.queue:
-            return cast(HeapQueueT, default)
+            return cast(tuple[*HeapQueueTs], default)
         return heapq.heappop(self.queue)
 
-    def heappop(self, value: HeapQueueT) -> None:
+    def heappop(self) -> None:
         self.pop()
 
     @property
-    def current(self) -> HeapQueueT:
+    def current(self) -> tuple[*HeapQueueTs]:
         return self.queue[0]
 
     @property
-    def first(self) -> HeapQueueT:
+    def first(self) -> tuple[*HeapQueueTs]:
         return self.queue[0]
 
     @property
-    def last(self) -> HeapQueueT:
+    def last(self) -> tuple[*HeapQueueTs]:
         return self[-1]
 
     @property
@@ -1731,45 +1737,45 @@ class HeapQueue(Generic[HeapQueueT]):
         return len(self)
 
     @overload
-    def __getitem__(self, idx: int) -> HeapQueueT: ...
+    def __getitem__(self, idx: int) -> tuple[*HeapQueueTs]: ...
 
     @overload
-    def __getitem__(self, idx: slice) -> list[HeapQueueT]: ...
+    def __getitem__(self, idx: slice) -> list[tuple[*HeapQueueTs]]: ...
 
-    def __getitem__(self, idx: int | slice) -> HeapQueueT | list[HeapQueueT]:
+    def __getitem__(self, idx: int | slice) -> tuple[*HeapQueueTs] | list[tuple[*HeapQueueTs]]:
         if idx == 0:
             return self.queue[0]
         self.queue = sorted(self.queue)
         return self.queue[idx]
 
-    def get(self, idx: int) -> HeapQueueT:
+    def get(self, idx: int) -> tuple[*HeapQueueTs]:
         return self.queue[idx]
 
-    def nsmallest(self, n: int, key: Callable[[HeapQueueT], Any] | None = None) -> list[HeapQueueT]:
+    def nsmallest(self, n: int, key: Callable[[*HeapQueueTs], Any] | None = None) -> list[tuple[*HeapQueueTs]]:
         return heapq.nsmallest(n, self.queue, key=key)
 
-    def nlargest(self, n: int, key: Callable[[HeapQueueT], Any] | None = None) -> list[HeapQueueT]:
+    def nlargest(self, n: int, key: Callable[[*HeapQueueTs], Any] | None = None) -> list[tuple[*HeapQueueTs]]:
         return heapq.nlargest(n, self.queue, key=key)
 
     def __len__(self) -> int:
         return len(self.queue)
 
-    def count(self, value: HeapQueueT) -> int:
+    def count(self, value: tuple[*HeapQueueTs]) -> int:
         return self.queue.count(value)
 
-    def index(self, value: HeapQueueT, start: int = 0, stop: int | None = None) -> int:
+    def index(self, value: tuple[*HeapQueueTs], start: int = 0, stop: int | None = None) -> int:
         self.queue = sorted(self.queue)
         if stop is None:
             return self.queue.index(value, start)
         return self.queue.index(value, start, stop)
 
-    def __contains__(self, value: HeapQueueT) -> bool:
+    def __contains__(self, value: tuple[*HeapQueueTs]) -> bool:
         return value in self.queue
 
     def __bool__(self) -> bool:
         return bool(self.queue)
 
-    def __iter__(self) -> Iterator[HeapQueueT]:
+    def __iter__(self) -> Iterator[tuple[*HeapQueueTs]]:
         self.queue = sorted(self.queue)
         return iter(self.queue)
 
@@ -1781,17 +1787,17 @@ class HeapQueue(Generic[HeapQueueT]):
         self.queue = sorted(self.queue)
         return f"HeapQueue({self.queue})"
 
-    def __copy__(self) -> HeapQueue[HeapQueueT]:
-        queue: HeapQueue[HeapQueueT] = HeapQueue()
+    def __copy__(self) -> HeapQueue[*HeapQueueTs]:
+        queue = cast(HeapQueue[*HeapQueueTs], HeapQueue())
         queue.queue = self.queue[:]
         return queue
 
-    def __deepcopy__(self, memo: dict | None) -> HeapQueue[HeapQueueT]:
-        queue: HeapQueue[HeapQueueT] = HeapQueue()
+    def __deepcopy__(self, memo: dict | None) -> HeapQueue[*HeapQueueTs]:
+        queue = cast(HeapQueue[*HeapQueueTs], HeapQueue())
         queue.queue = copy.deepcopy(self.queue)
         return queue
 
-    def copy(self) -> HeapQueue[HeapQueueT]:
+    def copy(self) -> HeapQueue[*HeapQueueTs]:
         return self.__copy__()
 
     def clear(self) -> None:
@@ -1810,42 +1816,42 @@ class HeapQueue(Generic[HeapQueueT]):
         other.queue = sorted(other.queue)
         return self.queue == other.queue
 
-    def __add__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+    def __add__(self, other: HeapQueue[*HeapQueueTs] | list[tuple[*HeapQueueTs]]) -> HeapQueue[*HeapQueueTs]:
         queue = self.copy()
         queue.extend(other)
         return queue
 
-    def __radd__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+    def __radd__(self, other: HeapQueue[*HeapQueueTs] | list[tuple[*HeapQueueTs]]) -> HeapQueue[*HeapQueueTs]:
         return self.__add__(other)
 
-    def __sub__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+    def __sub__(self, other: HeapQueue[*HeapQueueTs] | list[tuple[*HeapQueueTs]]) -> HeapQueue[*HeapQueueTs]:
         queue = self.copy()
         for value in other:
             if value in queue:
-                queue.remove(value)
+                queue.remove(*value)
         return queue
 
-    def __and__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
-        queue: HeapQueue[HeapQueueT] = HeapQueue()
+    def __and__(self, other: HeapQueue[*HeapQueueTs] | list[tuple[*HeapQueueTs]]) -> HeapQueue[*HeapQueueTs]:
+        queue = cast(HeapQueue[*HeapQueueTs], HeapQueue())
         for value in set(other):
             if value in self.queue:
-                queue.append(value)
+                queue.append(*value)
         return queue
 
-    def __rand__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+    def __rand__(self, other: HeapQueue[*HeapQueueTs] | list[tuple[*HeapQueueTs]]) -> HeapQueue[*HeapQueueTs]:
         return self.__and__(other)
 
-    def __or__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
-        queue: HeapQueue[HeapQueueT] = HeapQueue()
+    def __or__(self, other: HeapQueue[*HeapQueueTs] | list[tuple[*HeapQueueTs]]) -> HeapQueue[*HeapQueueTs]:
+        queue = cast(HeapQueue[*HeapQueueTs], HeapQueue())
         for value in set(other) | set(self.queue):
-            queue.append(value)
+            queue.append(*value)
         return queue
 
-    def __ror__(self, other: HeapQueue[HeapQueueT] | list[HeapQueueT]) -> HeapQueue[HeapQueueT]:
+    def __ror__(self, other: HeapQueue[*HeapQueueTs] | list[tuple[*HeapQueueTs]]) -> HeapQueue[*HeapQueueTs]:
         return self.__or__(other)
 
-    def distinct(self) -> HeapQueue[HeapQueueT]:
-        queue: HeapQueue[HeapQueueT] = HeapQueue()
+    def distinct(self) -> HeapQueue[*HeapQueueTs]:
+        queue = cast(HeapQueue[*HeapQueueTs], HeapQueue())
         for value in set(self.queue):
-            queue.append(value)
+            queue.append(*value)
         return queue
